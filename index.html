@@ -77,6 +77,10 @@
              font: 13px ui-sans-serif, system-ui; color: var(--muted); }
   .toolbar label { cursor:pointer; user-select:none; }
   .toolbar input { vertical-align: middle; margin-right: 4px; }
+  .toolbar button { font: inherit; padding: 4px 10px; border: 1px solid var(--accent);
+                    background: white; color: var(--accent); border-radius: 6px;
+                    cursor: pointer; }
+  .toolbar button:hover { background: var(--accent); color: white; }
 
   .card { background: var(--card); border: 1px solid var(--line);
           border-radius: 8px; padding: 14px 16px; margin-bottom: 12px;
@@ -158,6 +162,8 @@
       <label><input type="checkbox" data-show="type"      checked> Type</label>
       <label><input type="checkbox" data-show="topics"    checked> Topic</label>
       <label><input type="checkbox" data-show="norms"     checked> Norms</label>
+      <span style="flex:1"></span>
+      <button id="dl-csv" type="button">⬇ Download CSV</button>
     </div>
     <div id="rows"></div>
   </section>
@@ -215,6 +221,63 @@ document.querySelectorAll('.toolbar input[data-show]').forEach(cb => {
     saveShow(); render();
   });
 });
+
+document.querySelector('#dl-csv').addEventListener('click', downloadCSV);
+
+const CSV_FIELDS = [
+  'Canonical name','Aliases','Type','All types','Countries','Platform/Media',
+  'Topics (CSO)','Norms/values/interests','When periods','When min','When max',
+  'Paper count',
+  'Paper title','Paper author','Paper year','Paper URL','Page','Mechanism',
+  'Verbatim quote','Paper topic','Paper Where (raw)','Paper When (raw)',
+];
+
+function csvEscape(v) {
+  if (v == null) return '';
+  v = String(v);
+  if (/[",\n\r]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
+  return v;
+}
+
+function downloadCSV() {
+  const filtered = state.rows.filter(matches);
+  const lines = [CSV_FIELDS.map(csvEscape).join(',')];
+  for (const r of filtered) {
+    const base = [
+      r.name,
+      (r.aliases || []).join('; '),
+      r.type || '',
+      (r.types_all || []).join('; '),
+      (r.countries || []).join('; '),
+      (r.media || []).join('; '),
+      (r.topics || []).join('; '),
+      (r.norms || []).join('; '),
+      (r.when_periods || []).join('; '),
+      r.when_min == null ? '' : r.when_min,
+      r.when_max == null ? '' : r.when_max,
+      r.paper_count,
+    ];
+    if (!r.papers || !r.papers.length) {
+      lines.push(base.concat(['','','','','','','','','','']).map(csvEscape).join(','));
+      continue;
+    }
+    for (const p of r.papers) {
+      lines.push(base.concat([
+        p.title || '', p.author || '', p.year || '', p.url || '',
+        p.page || '', p.mechanism || '', p.quote || '',
+        p.topic || '', p.where || '', p.when || '',
+      ]).map(csvEscape).join(','));
+    }
+  }
+  const blob = new Blob(['﻿' + lines.join('\n')], {type: 'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const stamp = new Date().toISOString().slice(0,16).replace(/[:T]/g, '-');
+  a.download = `csos-${stamp}.csv`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+}
 
 function buildFilters() {
   const root = document.querySelector('#filters');
