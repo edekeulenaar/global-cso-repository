@@ -72,6 +72,11 @@
   .meta { color: var(--muted); font-size: 13px; margin-bottom: 10px;
           font-family: ui-sans-serif, system-ui; }
   .clear { color: var(--accent); cursor: pointer; margin-left: 8px; }
+  .toolbar { display:flex; flex-wrap:wrap; gap: 14px; padding: 8px 0 12px;
+             border-bottom: 1px solid var(--line); margin-bottom: 12px;
+             font: 13px ui-sans-serif, system-ui; color: var(--muted); }
+  .toolbar label { cursor:pointer; user-select:none; }
+  .toolbar input { vertical-align: middle; margin-right: 4px; }
 
   .card { background: var(--card); border: 1px solid var(--line);
           border-radius: 8px; padding: 14px 16px; margin-bottom: 12px;
@@ -145,6 +150,15 @@
   </aside>
   <section class="results">
     <div class="meta"><span id="count"></span><span id="active"></span></div>
+    <div class="toolbar">
+      <span>Show on cards:</span>
+      <label><input type="checkbox" data-show="when"      checked> When</label>
+      <label><input type="checkbox" data-show="countries" checked> Country</label>
+      <label><input type="checkbox" data-show="media"     checked> Platform/media</label>
+      <label><input type="checkbox" data-show="type"      checked> Type</label>
+      <label><input type="checkbox" data-show="topics"    checked> Topic</label>
+      <label><input type="checkbox" data-show="norms"     checked> Norms</label>
+    </div>
     <div id="rows"></div>
   </section>
 </main>
@@ -158,7 +172,7 @@ const FACETS = [
   { key: 'norms',     label: 'Norms / values / interests' },
 ];
 
-const TL_MIN = 1450, TL_MAX = 2025;
+const TL_MIN = 1400, TL_MAX = 2025;
 const state = {
   rows: [],
   selected: { countries:new Set(), media:new Set(),
@@ -166,7 +180,19 @@ const state = {
   q: '',
   tlFrom: TL_MIN, tlTo: TL_MAX,
   tlIncludeUnknown: true,
+  show: loadShow(),
 };
+
+function loadShow() {
+  const def = { when:true, countries:true, media:true, type:true, topics:true, norms:true };
+  try {
+    const s = JSON.parse(localStorage.getItem('cso_show') || '{}');
+    return { ...def, ...s };
+  } catch (e) { return def; }
+}
+function saveShow() {
+  try { localStorage.setItem('cso_show', JSON.stringify(state.show)); } catch (e) {}
+}
 
 fetch('data.json').then(r => r.json()).then(rows => {
   state.rows = rows;
@@ -180,6 +206,14 @@ fetch('data.json').then(r => r.json()).then(rows => {
 
 document.querySelector('#q').addEventListener('input', e => {
   state.q = e.target.value.trim().toLowerCase(); render();
+});
+
+document.querySelectorAll('.toolbar input[data-show]').forEach(cb => {
+  cb.checked = !!state.show[cb.dataset.show];
+  cb.addEventListener('change', e => {
+    state.show[e.target.dataset.show] = e.target.checked;
+    saveShow(); render();
+  });
 });
 
 function buildFilters() {
@@ -323,18 +357,18 @@ function renderCard(r) {
   const div = document.createElement('div');
   div.className = 'card';
   const tags = [];
-  for (const v of r.countries) tags.push(tag('countries', v, 'country'));
-  for (const v of r.media)     tags.push(tag('media',     v, 'media'));
-  for (const v of r.topics)    tags.push(tag('topics',    v, 'topic'));
-  if (r.type) tags.push(tag('type', r.type, 'type'));
-  for (const v of r.norms) tags.push(tag('norms', v, 'norms'));
+  if (state.show.countries) for (const v of r.countries) tags.push(tag('countries', v, 'country'));
+  if (state.show.media)     for (const v of r.media)     tags.push(tag('media',     v, 'media'));
+  if (state.show.topics)    for (const v of r.topics)    tags.push(tag('topics',    v, 'topic'));
+  if (state.show.type && r.type) tags.push(tag('type', r.type, 'type'));
+  if (state.show.norms)     for (const v of r.norms) tags.push(tag('norms', v, 'norms'));
 
   const periodLabel = r.when_min != null && r.when_max != null
     ? (r.when_periods.length === 1 ? r.when_periods[0]
        : (r.when_min === r.when_max ? r.when_min
           : r.when_min + '–' + r.when_max))
     : '';
-  if (periodLabel) tags.unshift(`<span class="tag k-when">${escapeHtml(periodLabel)}</span>`);
+  if (state.show.when && periodLabel) tags.unshift(`<span class="tag k-when">${escapeHtml(periodLabel)}</span>`);
 
   div.innerHTML = `
     <div><span class="name">${escapeHtml(r.name)}</span>
