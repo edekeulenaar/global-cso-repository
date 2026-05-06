@@ -299,6 +299,10 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 <p>The bibliography is joined in to provide each paper with its <strong>URL</strong> (from <code>Url</code> → <code>Additional Link</code> → <code>Scholar Link</code> → DOI) and <strong>Topic</strong> (the <code>Query</code> field — the literal search keyword that recalled the paper, e.g. <em>content moderation</em>, <em>modération censure</em>, <em>debate moderator</em>).</p>
 
+<p><strong>Article language.</strong> Each paper is assigned a <strong>Language</strong> (used as a filterable facet on cards). Inference is two-step: (1) prefer the Zotero <code>Language</code> field if populated (1,884 of 7,772 rows have an ISO code such as <code>en</code>, <code>es</code>, <code>fr</code>, <code>pt</code>, <code>it</code>, <code>de</code>, <code>ca</code>, <code>nl</code>), mapped to its canonical English name; (2) otherwise fall back to a hand-curated map from each of the 71 SerpAPI queries to its primary language — <em>moderazione censura</em> → Italian, <em>modération de contenu</em> → French, <em>moderação censura</em> → Portuguese, <em>Moderador de medios</em> → Spanish, <em>content moderation</em> → English. Queries that exist in several languages (<em>censura</em> in Spanish, Portuguese, Italian, Catalan) default to the most populous (Spanish) and are overridden whenever the Zotero Language field is set, so the rare-language counts (Catalan, Dutch, German, Indonesian) come purely from the Zotero metadata, never from query inference. Papers with neither a Zotero language nor a recognised query (the 708 manually-imported entries) are left unlabelled.</p>
+
+<p>Across the 7,026 merged CSOs the breakdown is approximately: <strong>English 3,897</strong>, <strong>Spanish 1,205</strong>, <strong>French 948</strong>, <strong>Portuguese 818</strong>, <strong>Italian 379</strong>, then a long tail of Catalan, Dutch, German, and Indonesian. (Numbers are mention counts, so a CSO discussed in both an English and a Spanish paper is counted under both.)</p>
+
 <details>
 <summary>Show normalisation prompts (Where, When, Norms)</summary>
 <pre id="prompt-norm">loading…</pre>
@@ -338,7 +342,7 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 </section>
 
-<script>window.BUILD_VERSION = '1778079125';
+<script>window.BUILD_VERSION = '1778079421';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
