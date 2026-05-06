@@ -108,6 +108,7 @@
   .card .tags .tag.k-type    { background: #e9d9d9; }
   .card .tags .tag.k-norms   { background: #d9e9d9; }
   .card .tags .tag.k-topic   { background: #efe4d4; }
+  .card .tags .tag.k-language{ background: #ddd9c5; }
   .card .tags .tag:hover { filter: brightness(.93); }
 
   .card details { margin-top: 10px; }
@@ -200,6 +201,7 @@
       <label><input type="checkbox" data-show="countries" checked> Country</label>
       <label><input type="checkbox" data-show="media"     checked> Platform/media</label>
       <label><input type="checkbox" data-show="type"      checked> Type</label>
+      <label><input type="checkbox" data-show="languages" checked> Language</label>
       <label><input type="checkbox" data-show="topics"    checked> Topic</label>
       <label><input type="checkbox" data-show="norms"     checked> Norms</label>
       <span style="flex:1"></span>
@@ -336,10 +338,11 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 </section>
 
-<script>window.BUILD_VERSION = '1778077759';
+<script>window.BUILD_VERSION = '1778079125';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
+  { key: 'languages', label: 'Article language' },
   { key: 'topics',    label: 'Topic' },
   { key: 'type',      label: 'Type', single: true },
   { key: 'norms',     label: 'Norms / values / interests' },
@@ -348,7 +351,7 @@ const FACETS = [
 const TL_MIN = 1400, TL_MAX = 2025;
 const state = {
   rows: [],
-  selected: { countries:new Set(), media:new Set(),
+  selected: { countries:new Set(), media:new Set(), languages:new Set(),
               topics:new Set(), type:new Set(), norms:new Set() },
   q: '',
   tlFrom: TL_MIN, tlTo: TL_MAX,
@@ -357,7 +360,7 @@ const state = {
 };
 
 function loadShow() {
-  const def = { when:true, countries:true, media:true, type:true, topics:true, norms:true };
+  const def = { when:true, countries:true, media:true, type:true, topics:true, norms:true, languages:true };
   try {
     const s = JSON.parse(localStorage.getItem('cso_show') || '{}');
     return { ...def, ...s };
@@ -456,9 +459,9 @@ document.querySelector('#dl-csv').addEventListener('click', downloadCSV);
 
 const CSV_FIELDS = [
   'Canonical name','Aliases','Type','All types','Countries','Platform/Media',
-  'Topics (CSO)','Norms/values/interests','When periods','When min','When max',
+  'Languages','Topics (CSO)','Norms/values/interests','When periods','When min','When max',
   'Paper count',
-  'Paper title','Paper author','Paper year','Paper URL','Page','Mechanism',
+  'Paper title','Paper author','Paper year','Paper language','Paper URL','Page','Mechanism',
   'Verbatim quote','Paper topic','Paper Where (raw)','Paper When (raw)',
 ];
 
@@ -480,6 +483,7 @@ function downloadCSV() {
       (r.types_all || []).join('; '),
       (r.countries || []).join('; '),
       (r.media || []).join('; '),
+      (r.languages || []).join('; '),
       (r.topics || []).join('; '),
       (r.norms || []).join('; '),
       (r.when_periods || []).join('; '),
@@ -488,12 +492,12 @@ function downloadCSV() {
       r.paper_count,
     ];
     if (!r.papers || !r.papers.length) {
-      lines.push(base.concat(['','','','','','','','','','']).map(csvEscape).join(','));
+      lines.push(base.concat(['','','','','','','','','','','']).map(csvEscape).join(','));
       continue;
     }
     for (const p of r.papers) {
       lines.push(base.concat([
-        p.title || '', p.author || '', p.year || '', p.url || '',
+        p.title || '', p.author || '', p.year || '', p.language || '', p.url || '',
         p.page || '', p.mechanism || '', p.quote || '',
         p.topic || '', p.where || '', p.when || '',
       ]).map(csvEscape).join(','));
@@ -671,6 +675,7 @@ function renderCard(r) {
   const tags = [];
   if (state.show.countries) for (const v of r.countries) tags.push(tag('countries', v, 'country'));
   if (state.show.media)     for (const v of r.media)     tags.push(tag('media',     v, 'media'));
+  if (state.show.languages) for (const v of (r.languages || [])) tags.push(tag('languages', v, 'language'));
   if (state.show.topics)    for (const v of r.topics)    tags.push(tag('topics',    v, 'topic'));
   if (state.show.type && r.type) tags.push(tag('type', r.type, 'type'));
   if (state.show.norms)     for (const v of r.norms) tags.push(tag('norms', v, 'norms'));
@@ -708,7 +713,7 @@ function renderPaper(p) {
     <div class="ptitle">${titleHtml}${pageBadge}</div>
     ${p.mechanism ? `<div class="pmech">${escapeHtml(p.mechanism)}</div>` : ''}
     ${p.quote ? `<div class="pquote"><span class="lbl">Verbatim passage${p.page ? ' (p. ' + escapeHtml(p.page) + ')' : ''}</span>“${escapeHtml(p.quote)}”</div>` : ''}
-    <div class="pmeta">${p.topic ? 'Topic: ' + escapeHtml(p.topic) + ' · ' : ''}${p.where ? escapeHtml(p.where) + ' · ' : ''}${p.when ? escapeHtml(p.when) : ''}</div>
+    <div class="pmeta">${p.language ? escapeHtml(p.language) + ' · ' : ''}${p.topic ? 'Topic: ' + escapeHtml(p.topic) + ' · ' : ''}${p.where ? escapeHtml(p.where) + ' · ' : ''}${p.when ? escapeHtml(p.when) : ''}</div>
   </li>`;
 }
 
