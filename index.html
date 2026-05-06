@@ -232,6 +232,36 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 <p><strong>2. AI model cards</strong> (43 PDFs from major frontier AI labs — GPT, Claude, Gemini, DeepSeek, Llama, Grok). These were treated as a parallel discipline (<code>AI / model card</code>) and processed alongside the academic literature, on the premise that model alignment, refusal training, RLHF/RLAIF, evaluation, and red-teaming are continuous with the longer history of moderation and censorship.</p>
 
+<h3>Bibliography construction, PDF retrieval, and relevance screening</h3>
+
+<p><strong>Search.</strong> Google Scholar was queried via SerpAPI across 71 search terms covering English (e.g. <em>censorship</em>, <em>moderation</em>, <em>content moderation</em>, <em>trust and safety</em>, <em>debate moderation</em>), Spanish (<em>censura</em>, <em>moderador censor</em>, <em>moderación de medios</em>), Portuguese (<em>moderação censura</em>, <em>moderação de conteúdo</em>, <em>moderação de mídia</em>), French (<em>censeur</em>, <em>modération censure</em>, <em>modérateur de débat</em>, <em>modération des médias</em>), and Italian (<em>il censore</em>, <em>moderazione censura</em>, <em>moderatore del dibattito</em>). Each query returned up to ~100 records; results were deduplicated and merged into <code>scholar_results_serpapi.csv</code> and then exported to a Zotero-compatible <code>master_bibliography.csv</code> with all standard fields (title, author, year, abstract, DOI, URL, publication title, etc.) plus the originating <code>Query</code>.</p>
+
+<p><strong>PDF retrieval</strong> (<a href="scripts/scholar_2_download.py" target="_blank">scholar_2_download.py</a>). For every record the script attempts a cascading retrieval strategy, falling through each option only on failure:</p>
+<ol>
+  <li>Direct URLs from the <code>Resources</code> / <code>Link</code> columns harvested by the scraper.</li>
+  <li><strong>OpenAlex</strong> open-access PDF locations (<code>best_oa_location</code>).</li>
+  <li><strong>Unpaywall</strong> OA URLs (free API, requires DOI).</li>
+  <li><strong>OpenAlex Content API</strong> (paid, 100 credits/file — used sparingly).</li>
+  <li>Domain-specific handlers: <strong>Taylor &amp; Francis</strong> (re-routed to Anna's Archive), <strong>SSRN</strong>, <strong>Springer</strong>, <strong>Project MUSE</strong>, <strong>OpenEdition</strong>, <strong>Persée</strong>, <strong>Cairn</strong>, <strong>Google Books</strong>.</li>
+  <li><strong>Sci-Hub</strong> — first via a local mirror library (<code>scihub.py</code>), then via direct requests / browser fallback by DOI, article URL, and <code>Resources</code> URLs.</li>
+  <li><strong>Anna's Archive</strong> — HTML scraping, then RapidAPI search across books and journals.</li>
+  <li><strong>LibGen</strong> — title + author search across multiple mirrors.</li>
+  <li><strong>Garbage World</strong> public API.</li>
+  <li>Generic landing-page discovery: scraping <code>citation_pdf_url</code> meta tags, embedded PDF viewers, and <em>PDF / download / fulltext</em> links from the publisher's HTML.</li>
+</ol>
+<p>Successful downloads write to <code>PDF downloads/</code> with a per-file metadata JSON. Failures log to <code>failed_downloads.csv</code> for later retry. The script is resume-safe and parallelisable.</p>
+
+<p><strong>Relevance screening</strong> (<a href="scripts/scholar_7_relevance.py" target="_blank">scholar_7_relevance.py</a>). After the first download pass, every bibliography row is classified by Gemini 2.5 Flash-Lite as <code>YES</code>, <code>NO</code>, or <code>MAYBE</code> based on title, author, abstract, and URL — without reading the PDF (cheap text-only call). The classification is written back to two new columns <code>Relevant</code> and <code>Relevant Note</code> in the master bibliography. The criteria are explicit:</p>
+<blockquote>
+<strong>RELEVANT</strong> includes: censorship in any historical period or country; speech moderation in philosophy, political theory, sociology and other social sciences; moderation in conflict resolution; content moderation, platform governance, trust &amp; safety; speech regulation, hate speech, harmful-content policies; information control, propaganda, disinformation policy; press freedom, media law, broadcasting regulation; deplatforming, shadowbanning, algorithmic demotion; index of forbidden books, publication bans, prior restraint; computer science / AI / NLP applied to moderation or censorship; internet governance, online-safety legislation; the moderation of public debates and conflicts; moderating powers and roles in political and media systems; moderation in political philosophy or philosophy in general; the moderating role of different societal actors (media, schools, religious institutions); moderation in media, political, and religious contexts.<br><br>
+<strong>NOT RELEVANT</strong>: medicine, clinical psychology, psychiatry, neuroscience; physics, chemistry, biology, ecology, earth sciences; engineering, materials science (unless about moderation tech); mathematics (unless applied to moderation/censorship); veterinary, agriculture, food science; items where censorship/moderation is mentioned only incidentally.
+</blockquote>
+<p>The screening is resume-safe (rows with a non-empty <code>Relevant</code> value are skipped) and rate-limited to fit Gemini's free-tier 15 RPM ceiling. Of the 7,772 records, <strong>3,563</strong> were classified YES or MAYBE.</p>
+
+<p><strong>Targeted re-download for relevant items</strong> (<a href="scripts/scholar_9_download_relevant.py" target="_blank">scholar_9_download_relevant.py</a>). A second download pass is run on YES/MAYBE rows that don't yet have a valid local PDF. Before retrying, the script harvests every URL from all Zotero/Scholar link fields (<code>Url</code>, <code>Additional Link</code>, <code>Scholar Link</code>, <code>Resources</code>, attachment URLs) and resolves missing DOIs from embedded URLs or Crossref metadata, expanding the input each item gives to the cascading download chain. This recovered substantially more PDFs than the first pass: <strong>1,785</strong> of the 3,563 YES/MAYBE items now have a local PDF (~50 %); the remainder are mostly paywalled monographs, theses, or items behind institutional logins that none of the OA / shadow channels reach. Failures are logged and the run is interruptible (Ctrl-C triggers a clean save).</p>
+
+<p>The PDFs that <em>do</em> land are the input to the CSO extraction pass described next.</p>
+
 <h3>CSO extraction</h3>
 <p>Each PDF was processed by <strong>Gemini 2.5 Flash</strong> (<a href="scripts/extract_csos.py" target="_blank">extract_csos.py</a>) with a prompt asking it to identify every <strong>civil society organisation</strong> substantively discussed in the document. The CSO category was defined to be <strong>historically variable</strong>: modern CSOs (NGOs, advocacy groups, watchdogs, trade associations, religious associations, trusted-flagger networks, AI-safety / evals organisations, industry consortia, external red-team auditors) and historical analogues (guilds, confraternities, learned societies, salons, reading societies, lodges, samizdat circles, abolitionist or temperance societies). State agencies, regulators, courts, for-profit platforms, and individuals were excluded; non-profit AI labs (e.g. EleutherAI) and third-party reviewers cited within commercial model cards were included.</p>
 
@@ -287,6 +317,11 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 <h3>Files & reproducibility</h3>
 <div class="files">
+  <div><strong>Bibliography construction &amp; PDF retrieval</strong></div>
+  <div>📄 <a href="scripts/scholar_2_download.py" target="_blank">scholar_2_download.py</a> — cascading PDF download (OpenAlex → Unpaywall → publisher handlers → Sci-Hub → Anna's Archive → LibGen → fallback)</div>
+  <div>📄 <a href="scripts/scholar_7_relevance.py" target="_blank">scholar_7_relevance.py</a> — Gemini relevance screening (YES / NO / MAYBE)</div>
+  <div>📄 <a href="scripts/scholar_9_download_relevant.py" target="_blank">scholar_9_download_relevant.py</a> — second-pass download targeting YES/MAYBE items</div>
+  <div style="margin-top:8px"><strong>CSO extraction &amp; site</strong></div>
   <div>📄 <a href="scripts/extract_csos.py" target="_blank">extract_csos.py</a> — Gemini-based CSO extraction from PDFs (resume-safe, parallel)</div>
   <div>📄 <a href="scripts/build_site.py" target="_blank">build_site.py</a> — normalisation, merging, bibliography join, static-site emission</div>
   <div>📊 <a href="data/cso_extraction_results.csv" target="_blank">cso_extraction_results.csv</a> — raw extraction (long format, one row per (paper, CSO))</div>
@@ -300,7 +335,7 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 </section>
 
-<script>window.BUILD_VERSION = '1778076533';
+<script>window.BUILD_VERSION = '1778077090';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
