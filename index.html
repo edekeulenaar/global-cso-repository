@@ -8,62 +8,135 @@
   :root {
     --bg:#fafaf7; --ink:#1c1c1c; --muted:#6a6a6a; --accent:#9b1c1c;
     --chip:#eee8d8; --chip-on:#9b1c1c; --chip-on-ink:#fff; --line:#dcd6c5;
+    --card:#fff;
   }
   * { box-sizing: border-box; }
   html,body { margin:0; padding:0; background:var(--bg); color:var(--ink);
               font: 15px/1.45 ui-serif, Georgia, "Iowan Old Style", serif; }
-  header { padding: 18px 22px; border-bottom: 1px solid var(--line); }
+  header { padding: 16px 22px; border-bottom: 1px solid var(--line); }
   header h1 { margin:0; font-size: 20px; font-weight:600; }
   header p  { margin:4px 0 0; color:var(--muted); font-size: 13px; }
   main { display:grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 60px); }
   aside { border-right:1px solid var(--line); padding: 14px 16px; overflow-y:auto;
-          max-height: calc(100vh - 60px); position:sticky; top:0; }
-  aside h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
-             color: var(--muted); margin: 14px 0 6px; }
+          max-height: calc(100vh - 60px); position:sticky; top:0;
+          font: 14px ui-sans-serif, system-ui, sans-serif; }
+  aside h2 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+             color: var(--muted); margin: 14px 0 6px;
+             font-family: ui-sans-serif, system-ui; font-weight: 700; }
   aside input[type=search] { width:100%; padding:6px 8px; border:1px solid var(--line);
              border-radius:6px; background:white; font: inherit; }
   .facet { margin-bottom: 8px; }
   .facet input[type=text] { width:100%; padding:4px 6px; border:1px solid var(--line);
              border-radius:4px; background:white; font: 13px ui-sans-serif,system-ui;
              margin-bottom: 4px; }
-  .chips { display:flex; flex-wrap:wrap; gap:4px; max-height: 180px; overflow-y:auto; }
+  .chips { display:flex; flex-wrap:wrap; gap:4px; max-height: 160px; overflow-y:auto;
+           padding-right: 4px; }
   .chip { font-size: 12px; padding: 2px 8px; border-radius: 999px;
           background: var(--chip); cursor: pointer; user-select:none;
-          border: 1px solid transparent; }
+          border: 1px solid transparent; font-family: ui-sans-serif, system-ui; }
   .chip:hover { border-color: var(--ink); }
   .chip.on { background: var(--chip-on); color: var(--chip-on-ink); }
   .chip .n { color:var(--muted); margin-left:4px; font-variant-numeric: tabular-nums; }
   .chip.on .n { color: rgba(255,255,255,.7); }
-  section.results { padding: 16px 22px; }
-  .meta { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+
+  /* Timeline */
+  .timeline { padding: 4px 0 8px; }
+  .timeline .yrs { display:flex; justify-content:space-between;
+                   font: 12px ui-sans-serif, system-ui; color:var(--muted);
+                   font-variant-numeric: tabular-nums; }
+  .timeline .double { position: relative; height: 32px; margin-top: 4px; }
+  .timeline .double input[type=range] {
+    position: absolute; left:0; right:0; width:100%; pointer-events:none;
+    -webkit-appearance: none; background: transparent; height: 32px;
+  }
+  .timeline .double input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance:none; pointer-events:auto;
+    width:16px; height:16px; border-radius:50%;
+    background:var(--accent); border:2px solid white;
+    box-shadow: 0 0 0 1px var(--accent);
+    margin-top:-7px; cursor:pointer;
+  }
+  .timeline .double input[type=range]::-moz-range-thumb {
+    pointer-events:auto; width:14px; height:14px; border-radius:50%;
+    background:var(--accent); border:2px solid white; cursor:pointer;
+  }
+  .timeline .track { position:absolute; left:0; right:0; top:14px;
+                     height:4px; background:var(--line); border-radius:2px; }
+  .timeline .fill  { position:absolute; top:14px; height:4px;
+                     background:var(--accent); border-radius:2px; }
+  .timeline .toggle { font-size:12px; color:var(--muted); margin-top:4px;
+                      font-family: ui-sans-serif, system-ui; }
+  .timeline .toggle label { cursor:pointer; }
+
+  section.results { padding: 14px 22px 40px; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 10px;
+          font-family: ui-sans-serif, system-ui; }
   .clear { color: var(--accent); cursor: pointer; margin-left: 8px; }
-  .row { padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .row .name { font-weight: 600; font-size: 16px; }
-  .row .type { color: var(--muted); font-size: 12px; margin-left: 6px;
-               text-transform: uppercase; letter-spacing: .04em; }
-  .row .mech { margin: 4px 0 6px; }
-  .row .src  { font-size: 13px; color: var(--muted); }
-  .row .src em { font-style: italic; }
-  .row .tags { margin-top: 6px; display:flex; flex-wrap:wrap; gap:4px; }
-  .row .tags .tag { font-size: 11px; padding: 1px 6px; border-radius:4px;
-                    background:#f0e9d5; color:#444; cursor:pointer; }
-  .row .tags .tag:hover { background:#e1d6b0; }
-  .row .tags .tag.k-where { background: #d9e4ec; }
-  .row .tags .tag.k-when  { background: #e2d9ec; }
-  .row .tags .tag.k-type  { background: #e9d9d9; }
-  .row .tags .tag.k-norms { background: #d9e9d9; }
-  .row .quote { font-size: 12px; color: var(--muted); margin-top:4px;
-                border-left: 2px solid var(--line); padding-left: 8px; }
-  .empty { padding: 30px 0; color: var(--muted); }
-  @media (max-width: 760px) { main { grid-template-columns: 1fr; }
+
+  .card { background: var(--card); border: 1px solid var(--line);
+          border-radius: 8px; padding: 14px 16px; margin-bottom: 12px;
+          box-shadow: 0 1px 0 rgba(0,0,0,.02); }
+  .card .name { font-weight: 600; font-size: 17px; }
+  .card .type { color: var(--muted); font-size: 11px; margin-left: 8px;
+                text-transform: uppercase; letter-spacing: .05em;
+                font-family: ui-sans-serif, system-ui; font-weight: 700; }
+  .card .summary { color:var(--muted); font-size: 13px; margin: 4px 0 8px;
+                   font-family: ui-sans-serif, system-ui; }
+  .card .tags { margin-top: 6px; display:flex; flex-wrap:wrap; gap:4px; }
+  .card .tags .tag { font-size: 11px; padding: 1px 7px; border-radius:4px;
+                     background:#f0e9d5; color:#444; cursor:pointer;
+                     font-family: ui-sans-serif, system-ui; }
+  .card .tags .tag.k-country { background: #d9e4ec; }
+  .card .tags .tag.k-media   { background: #e0d9ec; }
+  .card .tags .tag.k-when    { background: #e2d9ec; }
+  .card .tags .tag.k-type    { background: #e9d9d9; }
+  .card .tags .tag.k-norms   { background: #d9e9d9; }
+  .card .tags .tag.k-topic   { background: #efe4d4; }
+  .card .tags .tag:hover { filter: brightness(.93); }
+
+  .card details { margin-top: 10px; }
+  .card details > summary {
+    list-style: none; cursor: pointer; color: var(--accent); font-size: 13px;
+    font-family: ui-sans-serif, system-ui;
+  }
+  .card details > summary::-webkit-details-marker { display:none; }
+  .card details[open] > summary::after { content: ' ▾'; }
+  .card details:not([open]) > summary::after { content: ' ▸'; }
+
+  .papers { margin-top: 8px; padding-left: 0; list-style: none; }
+  .papers li { padding: 8px 0; border-top: 1px dashed var(--line); }
+  .papers li:first-child { border-top: none; }
+  .papers .ptitle { font-weight: 500; }
+  .papers .pmeta { font-size: 12px; color: var(--muted);
+                   font-family: ui-sans-serif, system-ui; }
+  .papers .pmech { margin: 3px 0; font-size: 14px; }
+  .papers .pquote { font-size: 13px; color: #333;
+                    border-left: 3px solid var(--accent); padding: 4px 10px;
+                    margin: 6px 0; background: #fbf6e8; }
+  .papers .pquote .lbl { font: 700 10px ui-sans-serif, system-ui;
+                         letter-spacing: .08em; text-transform: uppercase;
+                         color: var(--muted); display: block; margin-bottom: 2px; }
+  .papers .ppage { display: inline-block; margin-left: 6px;
+                   padding: 1px 7px; border-radius: 999px;
+                   background: #efe4d4; color: #5a3a00;
+                   font: 700 11px ui-sans-serif, system-ui;
+                   font-variant-numeric: tabular-nums; vertical-align: 1px; }
+  .papers a { color: var(--accent); text-decoration: none; }
+  .papers a:hover { text-decoration: underline; }
+  .empty { padding: 30px 0; color: var(--muted);
+           font-family: ui-sans-serif, system-ui; }
+
+  @media (max-width: 760px) {
+    main { grid-template-columns: 1fr; }
     aside { position: static; max-height: none; border-right: none;
-            border-bottom: 1px solid var(--line); } }
+            border-bottom: 1px solid var(--line); }
+  }
 </style>
 </head>
 <body>
 <header>
   <h1>Civil society organisations in censorship, moderation & AI alignment</h1>
-  <p>Faceted directory across academic literature and AI model cards.</p>
+  <p>Faceted directory across <span id="paper-stat">academic literature</span>.</p>
 </header>
 <main>
   <aside>
@@ -78,66 +151,99 @@
 
 <script>
 const FACETS = [
-  { key: 'where', label: 'Where',                     multi: true  },
-  { key: 'when',  label: 'When',                      multi: false },
-  { key: 'type',  label: 'Type',                      multi: false },
-  { key: 'norms', label: 'Norms / values / interests',multi: false },
+  { key: 'countries', label: 'Country / polity' },
+  { key: 'media',     label: 'Platform / media' },
+  { key: 'topics',    label: 'Topic' },
+  { key: 'type',      label: 'Type', single: true },
+  { key: 'norms',     label: 'Norms / values / interests' },
 ];
 
+const TL_MIN = 1450, TL_MAX = 2025;
 const state = {
   rows: [],
-  selected: { where: new Set(), when: new Set(), type: new Set(), norms: new Set() },
+  selected: { countries:new Set(), media:new Set(),
+              topics:new Set(), type:new Set(), norms:new Set() },
   q: '',
+  tlFrom: TL_MIN, tlTo: TL_MAX,
+  tlIncludeUnknown: true,
 };
 
 fetch('data.json').then(r => r.json()).then(rows => {
   state.rows = rows;
+  const totalPapers = rows.reduce((a,c) => a + c.paper_count, 0);
+  document.querySelector('#paper-stat').textContent =
+      `${rows.length.toLocaleString()} CSOs across ${totalPapers.toLocaleString()} paper mentions`;
   buildFilters();
+  hydrateFromHash();
   render();
-  // hash sync
-  if (location.hash.length > 1) {
-    try {
-      const s = JSON.parse(decodeURIComponent(location.hash.slice(1)));
-      for (const k of Object.keys(s)) {
-        if (k === 'q') state.q = s[k];
-        else if (state.selected[k]) state.selected[k] = new Set(s[k]);
-      }
-      document.querySelector('#q').value = state.q;
-      render();
-    } catch (e) {}
-  }
 });
 
 document.querySelector('#q').addEventListener('input', e => {
-  state.q = e.target.value.trim().toLowerCase();
-  render();
+  state.q = e.target.value.trim().toLowerCase(); render();
 });
 
 function buildFilters() {
   const root = document.querySelector('#filters');
   root.innerHTML = '';
+
+  // Timeline FIRST
+  const tlSec = document.createElement('div');
+  tlSec.className = 'timeline';
+  tlSec.innerHTML = `
+    <h2>When</h2>
+    <div class="yrs"><span id="tl-from">${TL_MIN}</span><span id="tl-to">${TL_MAX}</span></div>
+    <div class="double">
+      <div class="track"></div><div class="fill" id="tl-fill"></div>
+      <input type="range" id="tl-r1" min="${TL_MIN}" max="${TL_MAX}" value="${TL_MIN}" step="5">
+      <input type="range" id="tl-r2" min="${TL_MIN}" max="${TL_MAX}" value="${TL_MAX}" step="5">
+    </div>
+    <div class="toggle">
+      <label><input type="checkbox" id="tl-unknown" checked> include CSOs with unknown period</label>
+    </div>`;
+  root.appendChild(tlSec);
+  const r1 = tlSec.querySelector('#tl-r1');
+  const r2 = tlSec.querySelector('#tl-r2');
+  const fill = tlSec.querySelector('#tl-fill');
+  function syncFill(){
+    const a = Math.min(+r1.value, +r2.value), b = Math.max(+r1.value, +r2.value);
+    state.tlFrom = a; state.tlTo = b;
+    document.querySelector('#tl-from').textContent = a;
+    document.querySelector('#tl-to').textContent = b;
+    const w = TL_MAX - TL_MIN;
+    fill.style.left  = ((a - TL_MIN)/w*100).toFixed(2)+'%';
+    fill.style.right = ((TL_MAX - b)/w*100).toFixed(2)+'%';
+    render();
+  }
+  r1.addEventListener('input', syncFill);
+  r2.addEventListener('input', syncFill);
+  tlSec.querySelector('#tl-unknown').addEventListener('change', e => {
+    state.tlIncludeUnknown = e.target.checked; render();
+  });
+  syncFill();
+
+  // Categorical facets
   for (const f of FACETS) {
     const counts = new Map();
     for (const r of state.rows) {
-      const vals = f.multi ? (r[f.key] || []) : [r[f.key]];
+      const vals = f.single ? [r[f.key]] : (r[f.key] || []);
       for (const v of vals) {
         if (!v) continue;
         counts.set(v, (counts.get(v) || 0) + 1);
       }
     }
     const sorted = [...counts.entries()].sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]));
+    if (!sorted.length) continue;
     const sec = document.createElement('div');
     sec.className = 'facet';
     sec.innerHTML = `<h2>${f.label} <span style="color:var(--muted);font-weight:normal">(${sorted.length})</span></h2>
-                     <input type="text" placeholder="filter ${f.label.toLowerCase()}…" data-key="${f.key}">
+                     <input type="text" placeholder="filter ${f.label.toLowerCase()}…">
                      <div class="chips" data-key="${f.key}"></div>`;
     root.appendChild(sec);
     const chipBox = sec.querySelector('.chips');
     for (const [val, n] of sorted) {
       const c = document.createElement('span');
       c.className = 'chip';
-      c.dataset.key = f.key;
-      c.dataset.val = val;
+      c.dataset.key = f.key; c.dataset.val = val;
       c.innerHTML = `${escapeHtml(val)}<span class="n">${n}</span>`;
       c.onclick = () => toggle(f.key, val);
       chipBox.appendChild(c);
@@ -149,35 +255,40 @@ function buildFilters() {
       });
     });
   }
-  refreshChipState();
+  refreshChips();
 }
 
 function toggle(key, val) {
   const s = state.selected[key];
   if (s.has(val)) s.delete(val); else s.add(val);
-  refreshChipState();
-  render();
+  refreshChips(); render();
 }
 
-function refreshChipState() {
+function refreshChips() {
   document.querySelectorAll('.chip').forEach(ch => {
-    const on = state.selected[ch.dataset.key]?.has(ch.dataset.val);
-    ch.classList.toggle('on', !!on);
+    ch.classList.toggle('on', !!state.selected[ch.dataset.key]?.has(ch.dataset.val));
   });
 }
 
 function matches(r) {
   for (const f of FACETS) {
     const sel = state.selected[f.key];
-    if (sel.size === 0) continue;
-    const vals = f.multi ? (r[f.key] || []) : [r[f.key]];
+    if (!sel.size) continue;
+    const vals = f.single ? [r[f.key]] : (r[f.key] || []);
     let ok = false;
     for (const v of vals) if (v && sel.has(v)) { ok = true; break; }
     if (!ok) return false;
   }
+  // Timeline filter
+  const hasPeriod = (r.when_min != null && r.when_max != null);
+  if (!hasPeriod) {
+    if (!state.tlIncludeUnknown) return false;
+  } else {
+    // overlap with [tlFrom, tlTo]
+    if (r.when_max < state.tlFrom || r.when_min > state.tlTo) return false;
+  }
   if (state.q) {
-    const hay = (r.name + ' ' + r.mechanism + ' ' + r.title + ' '
-                 + r.author + ' ' + r.norms + ' ' + r.type).toLowerCase();
+    const hay = (r.name + ' ' + r.papers.map(p => p.title + ' ' + p.author + ' ' + p.mechanism).join(' ')).toLowerCase();
     if (!hay.includes(state.q)) return false;
   }
   return true;
@@ -186,55 +297,77 @@ function matches(r) {
 function render() {
   const filtered = state.rows.filter(matches);
   document.querySelector('#count').textContent =
-      `${filtered.length.toLocaleString()} CSO mention${filtered.length===1?'':'s'}`;
-  const active = activeBits();
-  document.querySelector('#active').innerHTML = active
-      ? ` · ${active} <span class="clear" onclick="clearAll()">clear all</span>` : '';
+      `${filtered.length.toLocaleString()} CSO${filtered.length===1?'':'s'}`;
+  document.querySelector('#active').innerHTML =
+      activeBits() ? ` · ${activeBits()} <span class="clear" onclick="clearAll()">clear all</span>` : '';
 
-  // sort: by Canonical name, then paper year desc
-  filtered.sort((a,b) =>
-      a.name.localeCompare(b.name) ||
-      (b.year || '').localeCompare(a.year || ''));
-
-  const out = document.querySelector('#rows');
-  out.innerHTML = '';
+  const box = document.querySelector('#rows');
+  box.innerHTML = '';
   if (!filtered.length) {
-    out.innerHTML = '<div class="empty">No matches. Try clearing some filters.</div>';
-    return;
+    box.innerHTML = '<div class="empty">No matches. Try clearing some filters.</div>';
+    syncHash(); return;
   }
   const frag = document.createDocumentFragment();
-  for (const r of filtered.slice(0, 500)) {
-    const div = document.createElement('div');
-    div.className = 'row';
-    const tags = [];
-    for (const w of (r.where || [])) tags.push(tag('where', w));
-    if (r.when && r.when !== 'unspecified') tags.push(tag('when', r.when));
-    if (r.type)  tags.push(tag('type', r.type));
-    if (r.norms) tags.push(tag('norms', r.norms));
-    div.innerHTML = `
-      <div><span class="name">${escapeHtml(r.name)}</span>
-           ${r.type ? `<span class="type">${escapeHtml(r.type)}</span>` : ''}</div>
-      ${r.mechanism ? `<div class="mech">${escapeHtml(r.mechanism)}</div>` : ''}
-      <div class="src"><em>${escapeHtml(r.title)}</em>${r.author ? ' — ' + escapeHtml(r.author) : ''}${r.year ? ' (' + escapeHtml(r.year) + ')' : ''}${r.page ? ', p. ' + escapeHtml(r.page) : ''}</div>
-      ${r.quote ? `<div class="quote">“${escapeHtml(r.quote)}”</div>` : ''}
-      <div class="tags">${tags.join('')}</div>`;
-    div.querySelectorAll('.tag').forEach(el => {
-      el.onclick = () => toggle(el.dataset.key, el.dataset.val);
-    });
-    frag.appendChild(div);
-  }
-  if (filtered.length > 500) {
+  for (const r of filtered.slice(0, 400)) frag.appendChild(renderCard(r));
+  if (filtered.length > 400) {
     const more = document.createElement('div');
     more.className = 'empty';
-    more.textContent = `Showing first 500 of ${filtered.length.toLocaleString()}. Refine filters to narrow down.`;
+    more.textContent = `Showing first 400 of ${filtered.length.toLocaleString()}. Refine filters to narrow down.`;
     frag.appendChild(more);
   }
-  out.appendChild(frag);
+  box.appendChild(frag);
   syncHash();
 }
 
-function tag(key, val) {
-  return `<span class="tag k-${key}" data-key="${key}" data-val="${escapeAttr(val)}">${escapeHtml(val)}</span>`;
+function renderCard(r) {
+  const div = document.createElement('div');
+  div.className = 'card';
+  const tags = [];
+  for (const v of r.countries) tags.push(tag('countries', v, 'country'));
+  for (const v of r.media)     tags.push(tag('media',     v, 'media'));
+  for (const v of r.topics)    tags.push(tag('topics',    v, 'topic'));
+  if (r.type) tags.push(tag('type', r.type, 'type'));
+  for (const v of r.norms) tags.push(tag('norms', v, 'norms'));
+
+  const periodLabel = r.when_min != null && r.when_max != null
+    ? (r.when_periods.length === 1 ? r.when_periods[0]
+       : (r.when_min === r.when_max ? r.when_min
+          : r.when_min + '–' + r.when_max))
+    : '';
+  if (periodLabel) tags.unshift(`<span class="tag k-when">${escapeHtml(periodLabel)}</span>`);
+
+  div.innerHTML = `
+    <div><span class="name">${escapeHtml(r.name)}</span>
+         ${r.type ? `<span class="type">${escapeHtml(r.type)}</span>` : ''}</div>
+    <div class="summary">Cited by <strong>${r.paper_count}</strong> paper${r.paper_count===1?'':'s'}${
+       r.aliases.length > 1 ? ' · also: ' + r.aliases.filter(a=>a!==r.name).map(escapeHtml).join('; ') : ''}</div>
+    <div class="tags">${tags.join('')}</div>
+    <details>
+      <summary>Show ${r.paper_count} citation${r.paper_count===1?'':'s'}</summary>
+      <ul class="papers">${r.papers.map(renderPaper).join('')}</ul>
+    </details>`;
+  div.querySelectorAll('.tag').forEach(el => {
+    if (el.dataset.key) el.onclick = () => toggle(el.dataset.key, el.dataset.val);
+  });
+  return div;
+}
+
+function renderPaper(p) {
+  const cite = `<em>${escapeHtml(p.title)}</em>${p.author ? ' — ' + escapeHtml(p.author) : ''}${p.year ? ' (' + escapeHtml(p.year) + ')' : ''}`;
+  const titleHtml = p.url
+    ? `<a href="${escapeAttr(p.url)}" target="_blank" rel="noopener noreferrer">${cite}</a>`
+    : cite;
+  const pageBadge = p.page ? `<span class="ppage">p. ${escapeHtml(p.page)}</span>` : '';
+  return `<li>
+    <div class="ptitle">${titleHtml}${pageBadge}</div>
+    ${p.mechanism ? `<div class="pmech">${escapeHtml(p.mechanism)}</div>` : ''}
+    ${p.quote ? `<div class="pquote"><span class="lbl">Verbatim passage${p.page ? ' (p. ' + escapeHtml(p.page) + ')' : ''}</span>“${escapeHtml(p.quote)}”</div>` : ''}
+    <div class="pmeta">${p.topic ? 'Topic: ' + escapeHtml(p.topic) + ' · ' : ''}${p.where ? escapeHtml(p.where) + ' · ' : ''}${p.when ? escapeHtml(p.when) : ''}</div>
+  </li>`;
+}
+
+function tag(key, val, klass) {
+  return `<span class="tag k-${klass}" data-key="${key}" data-val="${escapeAttr(val)}">${escapeHtml(val)}</span>`;
 }
 
 function activeBits() {
@@ -243,6 +376,8 @@ function activeBits() {
     if (state.selected[f.key].size)
       parts.push(`${f.label}: ${[...state.selected[f.key]].map(escapeHtml).join(', ')}`);
   }
+  if (state.tlFrom !== TL_MIN || state.tlTo !== TL_MAX)
+    parts.push(`When: ${state.tlFrom}–${state.tlTo}`);
   return parts.join(' · ');
 }
 
@@ -250,18 +385,40 @@ function clearAll() {
   for (const k of Object.keys(state.selected)) state.selected[k].clear();
   state.q = '';
   document.querySelector('#q').value = '';
-  refreshChipState();
-  render();
+  state.tlFrom = TL_MIN; state.tlTo = TL_MAX;
+  document.querySelector('#tl-r1').value = TL_MIN;
+  document.querySelector('#tl-r2').value = TL_MAX;
+  document.querySelector('#tl-r1').dispatchEvent(new Event('input'));
+  refreshChips();
 }
 
 function syncHash() {
   const s = {};
-  for (const k of Object.keys(state.selected)) {
+  for (const k of Object.keys(state.selected))
     if (state.selected[k].size) s[k] = [...state.selected[k]];
-  }
   if (state.q) s.q = state.q;
+  if (state.tlFrom !== TL_MIN) s.from = state.tlFrom;
+  if (state.tlTo   !== TL_MAX) s.to   = state.tlTo;
+  if (!state.tlIncludeUnknown) s.no_unk = 1;
   const h = Object.keys(s).length ? '#' + encodeURIComponent(JSON.stringify(s)) : '';
   if (location.hash !== h) history.replaceState(null, '', h || '#');
+}
+
+function hydrateFromHash() {
+  if (location.hash.length < 2) return;
+  try {
+    const s = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+    for (const k of Object.keys(s)) {
+      if (k === 'q') { state.q = s[k]; document.querySelector('#q').value = s[k]; }
+      else if (k === 'from') { state.tlFrom = s[k]; document.querySelector('#tl-r1').value = s[k]; }
+      else if (k === 'to')   { state.tlTo   = s[k]; document.querySelector('#tl-r2').value = s[k]; }
+      else if (k === 'no_unk') { state.tlIncludeUnknown = false;
+                                 document.querySelector('#tl-unknown').checked = false; }
+      else if (state.selected[k]) state.selected[k] = new Set(s[k]);
+    }
+    document.querySelector('#tl-r1').dispatchEvent(new Event('input'));
+    refreshChips();
+  } catch (e) {}
 }
 
 function escapeHtml(s) {
