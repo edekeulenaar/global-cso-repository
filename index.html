@@ -169,7 +169,7 @@
   </section>
 </main>
 
-<script>
+<script>window.BUILD_VERSION = '1778065131';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
@@ -200,7 +200,7 @@ function saveShow() {
   try { localStorage.setItem('cso_show', JSON.stringify(state.show)); } catch (e) {}
 }
 
-fetch('data.json').then(r => r.json()).then(rows => {
+fetch('data.json?v=' + (window.BUILD_VERSION || Date.now()), {cache: 'no-cache'}).then(r => r.json()).then(rows => {
   state.rows = rows;
   const totalPapers = rows.reduce((a,c) => a + c.paper_count, 0);
   document.querySelector('#paper-stat').textContent =
