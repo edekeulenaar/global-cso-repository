@@ -324,18 +324,19 @@ The bibliography was discipline-classified using a separate enrichment pass and 
   <div style="margin-top:8px"><strong>CSO extraction &amp; site</strong></div>
   <div>📄 <a href="scripts/extract_csos.py" target="_blank">extract_csos.py</a> — Gemini-based CSO extraction from PDFs (resume-safe, parallel)</div>
   <div>📄 <a href="scripts/build_site.py" target="_blank">build_site.py</a> — normalisation, merging, bibliography join, static-site emission</div>
+  <div>📊 <a href="data/master_bibliography_disciplines_enriched.csv" target="_blank">master_bibliography_disciplines_enriched.csv</a> — full bibliography (7,772 records with discipline, query, relevance verdict)</div>
   <div>📊 <a href="data/cso_extraction_results.csv" target="_blank">cso_extraction_results.csv</a> — raw extraction (long format, one row per (paper, CSO))</div>
   <div>🔗 <a href="data.json" target="_blank">data.json</a> — the built directory (one record per merged CSO)</div>
   <div>💾 <a href="https://github.com/edekeulenaar/global-cso-repository" target="_blank">Repository</a> — full source of this site</div>
 </div>
 
-<p style="margin-top:14px"><strong>Bibliography:</strong> the source bibliography <code>master_bibliography_disciplines_enriched.csv</code> lives in the parent PhD project (Censorship and moderation; Analyses folder). It contains <strong>7,772</strong> Zotero-style records with <code>Url</code>, <code>DOI</code>, <code>Additional Link</code>, <code>Query</code>, <code>Discipline</code>, <code>Local PDF Path</code>, and a <code>Relevant</code> verdict (YES/MAYBE/NO) used to filter the extraction set.</p>
+<p style="margin-top:14px"><strong>Bibliography:</strong> the source bibliography <code>master_bibliography_disciplines_enriched.csv</code> is available <a href="data/master_bibliography_disciplines_enriched.csv" target="_blank">here</a>. It contains <strong>7,772</strong> Zotero-style records with <code>Url</code>, <code>DOI</code>, <code>Additional Link</code>, <code>Query</code>, <code>Discipline</code>, <code>Local PDF Path</code>, and a <code>Relevant</code> verdict (YES/MAYBE/NO) used to filter the extraction set.</p>
 
 <p>Every run is incremental: new PDFs added to the corpus, new model cards dropped into the alignment-actors folder, or new normalised values are picked up automatically without re-doing prior work. Each rebuild stamps a <code>BUILD_VERSION</code> into the page so users always see fresh data.</p>
 
 </section>
 
-<script>window.BUILD_VERSION = '1778077090';
+<script>window.BUILD_VERSION = '1778077759';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
@@ -422,11 +423,25 @@ async function loadPrompts() {
   }
 }
 function sliceTriplyQuoted(src, name) {
-  // Match  NAME = (triple-quoted block) ... (closing triple-quote)
+  // Find  NAME = (triple-quoted block) ... (closing triple-quote)
   const Q3 = String.fromCharCode(34, 34, 34);
-  const re = new RegExp(name + '\\s*=\\s*' + Q3 + '\\\\?\\n([\\s\\S]*?)\\n' + Q3);
-  const m = src.match(re);
-  return m ? m[1] : '';
+  const needle = name + ' = ' + Q3;
+  let i = src.indexOf(needle);
+  if (i < 0) {
+    // tolerate variable spacing
+    const re = new RegExp(name + '\\s*=\\s*' + Q3);
+    const m = src.match(re);
+    if (!m) return '';
+    i = m.index;
+  }
+  // Skip past the opening triple-quote (and an optional trailing backslash + newline)
+  let start = src.indexOf(Q3, i) + 3;
+  if (src[start] === '\\') start += 1;
+  if (src[start] === '\n') start += 1;
+  // Find the next standalone triple-quote
+  const end = src.indexOf(Q3, start);
+  if (end < 0) return '';
+  return src.slice(start, end).replace(/\s+$/, '');
 }
 
 document.querySelectorAll('.toolbar input[data-show]').forEach(cb => {
