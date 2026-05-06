@@ -13,9 +13,16 @@
   * { box-sizing: border-box; }
   html,body { margin:0; padding:0; background:var(--bg); color:var(--ink);
               font: 15px/1.45 ui-serif, Georgia, "Iowan Old Style", serif; }
-  header { padding: 16px 22px; border-bottom: 1px solid var(--line); }
+  header { padding: 16px 22px; border-bottom: 1px solid var(--line);
+           display:flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+  header .titles { flex:1 1 auto; min-width: 280px; }
   header h1 { margin:0; font-size: 20px; font-weight:600; }
   header p  { margin:4px 0 0; color:var(--muted); font-size: 13px; }
+  header nav { font: 14px ui-sans-serif, system-ui; }
+  header nav a { color: var(--muted); text-decoration: none; padding: 6px 10px;
+                 border-radius: 6px; cursor: pointer; }
+  header nav a.active { color: var(--ink); background: var(--chip); font-weight: 600; }
+  header nav a:hover { background: var(--line); }
   main { display:grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 60px); }
   aside { border-right:1px solid var(--line); padding: 14px 16px; overflow-y:auto;
           max-height: calc(100vh - 60px); position:sticky; top:0;
@@ -140,14 +147,47 @@
     aside { position: static; max-height: none; border-right: none;
             border-bottom: 1px solid var(--line); }
   }
+
+  /* Method page */
+  .method { max-width: 820px; margin: 0 auto; padding: 24px 24px 80px;
+            font-size: 15.5px; line-height: 1.55; }
+  .method h2 { font-size: 22px; margin-top: 28px; }
+  .method h3 { font-size: 17px; margin-top: 22px;
+               font-family: ui-sans-serif, system-ui; letter-spacing: -.005em; }
+  .method p, .method li { color: #222; }
+  .method ul, .method ol { padding-left: 1.2em; }
+  .method code { background:#f0e9d5; padding: 1px 5px; border-radius: 4px;
+                 font: 13px ui-monospace, "SF Mono", monospace; }
+  .method pre { background:#f5efdc; padding: 12px 14px; border-radius: 8px;
+                overflow-x: auto; font: 12.5px/1.5 ui-monospace, "SF Mono", monospace;
+                border-left: 3px solid var(--accent); }
+  .method a { color: var(--accent); }
+  .method .files { display:grid; gap: 6px; padding: 12px 14px;
+                   background: #fff; border:1px solid var(--line); border-radius:8px; }
+  .method details { margin: 8px 0; }
+  .method details summary { cursor:pointer; color: var(--accent); font-family: ui-sans-serif, system-ui; }
+  .method details[open] summary { margin-bottom: 6px; }
+  .method blockquote { margin: 10px 0; padding: 6px 14px; border-left: 3px solid var(--line);
+                       color: var(--muted); }
+
+  /* Sort dropdown */
+  .toolbar select { font: inherit; padding: 3px 6px; border:1px solid var(--line);
+                    border-radius: 6px; background: white; }
+  .hidden { display: none !important; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Civil society organisations in censorship, moderation & AI alignment</h1>
-  <p>Faceted directory across <span id="paper-stat">academic literature</span>.</p>
+  <div class="titles">
+    <h1>Civil society organisations in censorship, moderation & AI alignment</h1>
+    <p>Faceted directory across <span id="paper-stat">academic literature</span>.</p>
+  </div>
+  <nav>
+    <a id="nav-dir" class="active">Directory</a>
+    <a id="nav-method">Method</a>
+  </nav>
 </header>
-<main>
+<main id="view-directory">
   <aside>
     <input type="search" id="q" placeholder="Search names, mechanisms, papers…">
     <div id="filters"></div>
@@ -163,13 +203,104 @@
       <label><input type="checkbox" data-show="topics"    checked> Topic</label>
       <label><input type="checkbox" data-show="norms"     checked> Norms</label>
       <span style="flex:1"></span>
+      <label>Sort:
+        <select id="sort">
+          <option value="cited">Most cited</option>
+          <option value="alpha">Alphabetical (A–Z)</option>
+          <option value="recent">Most recent paper</option>
+          <option value="oldest">Earliest period</option>
+        </select>
+      </label>
       <button id="dl-csv" type="button">⬇ Download CSV</button>
     </div>
     <div id="rows"></div>
   </section>
 </main>
 
-<script>window.BUILD_VERSION = '1778065131';
+<section id="view-method" class="hidden method">
+<h2>Method</h2>
+
+<h3>Corpus</h3>
+<p>The corpus combines two sources.</p>
+
+<p><strong>1. Academic literature on censorship, moderation, and AI alignment.</strong>
+A bibliography of <strong>7,772</strong> records was built by scraping Google Scholar with <strong>71 queries</strong> across English, Spanish, Portuguese, French, and Italian
+(e.g. <em>censorship</em>, <em>moderation</em>, <em>modération censure</em>, <em>moderazione censura</em>, <em>moderação de conteúdo</em>, <em>trust and safety</em>,
+<em>content moderation</em>, <em>debate moderation</em>). Records were screened for relevance to censorship/moderation as forms of public-debate or content gatekeeping;
+<strong>3,563</strong> were tagged YES/MAYBE, of which <strong>1,785</strong> PDFs were successfully downloaded.
+The bibliography was discipline-classified using a separate enrichment pass and joined to the extraction by PDF path or title.</p>
+
+<p><strong>2. AI model cards</strong> (43 PDFs from major frontier AI labs — GPT, Claude, Gemini, DeepSeek, Llama, Grok). These were treated as a parallel discipline (<code>AI / model card</code>) and processed alongside the academic literature, on the premise that model alignment, refusal training, RLHF/RLAIF, evaluation, and red-teaming are continuous with the longer history of moderation and censorship.</p>
+
+<h3>CSO extraction</h3>
+<p>Each PDF was processed by <strong>Gemini 2.5 Flash</strong> (<a href="scripts/extract_csos.py" target="_blank">extract_csos.py</a>) with a prompt asking it to identify every <strong>civil society organisation</strong> substantively discussed in the document. The CSO category was defined to be <strong>historically variable</strong>: modern CSOs (NGOs, advocacy groups, watchdogs, trade associations, religious associations, trusted-flagger networks, AI-safety / evals organisations, industry consortia, external red-team auditors) and historical analogues (guilds, confraternities, learned societies, salons, reading societies, lodges, samizdat circles, abolitionist or temperance societies). State agencies, regulators, courts, for-profit platforms, and individuals were excluded; non-profit AI labs (e.g. EleutherAI) and third-party reviewers cited within commercial model cards were included.</p>
+
+<p>For each CSO the model returned:</p>
+<ul>
+  <li><strong>Name in text</strong> (verbatim) and <strong>canonical name</strong></li>
+  <li><strong>Type</strong> (from a closed taxonomy with an <em>other</em> escape hatch)</li>
+  <li><strong>Mechanism</strong> — a 1–3 sentence paraphrase of how the CSO participates in censorship, moderation, or alignment (lobbying, drafting codes of conduct, licensing presses, running flagger / trusted-flagger programmes, pre-deployment evaluations, drafting voluntary commitments, maintaining indexes of forbidden books, social shaming, underground circulation, etc.)</li>
+  <li><strong>Norms / values / interests</strong> the CSO defends</li>
+  <li><strong>Verbatim quote</strong> evidencing the mechanism, with page number</li>
+</ul>
+
+<p>For each <em>paper</em> (paper-level, generated once per PDF) the model also returned <strong>Where</strong> (country, polity, platform, media type, or AI model family — e.g. <em>Weibo, China</em>; <em>MENA region</em>; <em>Claude 3 family</em>) and <strong>When</strong> (the temporal scope of the <em>world described</em>, not the world of writing — e.g. <em>16th century</em>, <em>Cold War</em>, <em>post-2010 platform era</em>).</p>
+
+<p>The pipeline is <strong>resume-safe</strong> (already-extracted PDFs are skipped) and <strong>parallelised</strong> across 3 Gemini workers, with a <code>--retry-errors</code> mode that re-queues failed extractions. Output is <a href="data/cso_extraction_results.csv" target="_blank">cso_extraction_results.csv</a>: long format, one row per (paper, CSO).</p>
+
+<details>
+<summary>Show full extraction prompt</summary>
+<pre id="prompt-extract">loading…</pre>
+</details>
+
+<h3>Normalisation, merging, and bibliography join</h3>
+<p>The raw extraction contains messy free-text values that would be unusable as filters. A second Gemini pass (<a href="scripts/build_site.py" target="_blank">build_site.py</a>) normalises them:</p>
+<ul>
+  <li><strong>Where</strong> is split into two atomic facet lists: <strong>countries / polities</strong> (canonical English names — <em>United States</em>, <em>Holy Roman Empire</em>, <em>Soviet Union</em> — with subdivisions collapsed to the country and named regions like MENA expanded into their constituent countries) and <strong>platforms / media</strong> (platforms, media types, AI model families).</li>
+  <li><strong>When</strong> is converted to a canonical period label plus a <code>(start, end)</code> year tuple, clamped to <strong>1400–2025</strong> to suppress hand-waved “since antiquity” ranges. Paper-level periods spanning more than 200 years are discarded as too vague.</li>
+  <li><strong>Norms / values / interests</strong> is mapped to short canonical noun phrases (<em>free speech</em>, <em>public morals</em>, <em>AI safety</em>, <em>trade monopoly</em>, <em>religious orthodoxy</em>) so that synonyms collapse.</li>
+</ul>
+
+<p>Results are cached in <code>normalizations.json</code>, so incremental rebuilds only normalise newly-seen values. A local migration step parses centuries, period names, and year ranges with regex/lookup before falling back to Gemini, making rebuilds essentially free.</p>
+
+<p>CSOs are then <strong>merged by canonical name</strong> using a case-insensitive, accent-folded, article-stripped key. A merged CSO retains all aliases under which it appears, the most common type across mentions, the union of countries/media/norms/topics/periods, and the full list of source papers with each paper's individual mechanism and verbatim quote preserved.</p>
+
+<p>The bibliography is joined in to provide each paper with its <strong>URL</strong> (from <code>Url</code> → <code>Additional Link</code> → <code>Scholar Link</code> → DOI) and <strong>Topic</strong> (the <code>Query</code> field — the literal search keyword that recalled the paper, e.g. <em>content moderation</em>, <em>modération censure</em>, <em>debate moderator</em>).</p>
+
+<details>
+<summary>Show normalisation prompts (Where, When, Norms)</summary>
+<pre id="prompt-norm">loading…</pre>
+</details>
+
+<h3>Interface</h3>
+<p>This site is a single static page (<code>index.html</code> + <code>data.json</code>), published via GitHub Pages. The interface is a <strong>faceted directory</strong> of CSOs:</p>
+<ul>
+  <li><strong>Sidebar filters</strong> (chip-based, with within-facet search): Country / polity, Platform / media, Topic (search query), Type, Norms / values / interests.</li>
+  <li><strong>Timeline slider</strong> for <em>When</em>: dual-handle range slider over 1400–2025; a CSO is shown if its aggregated <code>[when_min, when_max]</code> overlaps the selected range.</li>
+  <li><strong>Full-text search</strong> across CSO names, mechanisms, paper titles, and authors.</li>
+  <li><strong>CSO cards</strong> display the merged metadata as clickable tags (clicking a tag toggles the corresponding filter), with a “Cited by N papers” counter and an expandable citation list. Each citation shows the paper's title (linked to the URL), author, year, <strong>page number</strong> as a prominent badge, the per-paper <strong>mechanism</strong>, and the <strong>verbatim passage</strong> in a pull-quote block.</li>
+  <li><strong>Visibility toggles</strong> (persisted via <code>localStorage</code>) hide Topic/Norms/etc. tags for a less cluttered view.</li>
+  <li><strong>Sort options</strong>: most cited, alphabetical, most recent paper, earliest period.</li>
+  <li><strong>Shareable URL</strong> — every filter choice (chips, timeline, search) is encoded into the URL hash.</li>
+  <li><strong>CSV download</strong> exports the currently filtered result set in long format with all metadata including verbatim quotes and URLs.</li>
+</ul>
+
+<h3>Files & reproducibility</h3>
+<div class="files">
+  <div>📄 <a href="scripts/extract_csos.py" target="_blank">extract_csos.py</a> — Gemini-based CSO extraction from PDFs (resume-safe, parallel)</div>
+  <div>📄 <a href="scripts/build_site.py" target="_blank">build_site.py</a> — normalisation, merging, bibliography join, static-site emission</div>
+  <div>📊 <a href="data/cso_extraction_results.csv" target="_blank">cso_extraction_results.csv</a> — raw extraction (long format, one row per (paper, CSO))</div>
+  <div>🔗 <a href="data.json" target="_blank">data.json</a> — the built directory (one record per merged CSO)</div>
+  <div>💾 <a href="https://github.com/edekeulenaar/global-cso-repository" target="_blank">Repository</a> — full source of this site</div>
+</div>
+
+<p style="margin-top:14px"><strong>Bibliography:</strong> the source bibliography <code>master_bibliography_disciplines_enriched.csv</code> lives in the parent PhD project (Censorship and moderation; Analyses folder). It contains <strong>7,772</strong> Zotero-style records with <code>Url</code>, <code>DOI</code>, <code>Additional Link</code>, <code>Query</code>, <code>Discipline</code>, <code>Local PDF Path</code>, and a <code>Relevant</code> verdict (YES/MAYBE/NO) used to filter the extraction set.</p>
+
+<p>Every run is incremental: new PDFs added to the corpus, new model cards dropped into the alignment-actors folder, or new normalised values are picked up automatically without re-doing prior work. Each rebuild stamps a <code>BUILD_VERSION</code> into the page so users always see fresh data.</p>
+
+</section>
+
+<script>window.BUILD_VERSION = '1778076533';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
@@ -213,6 +344,55 @@ fetch('data.json?v=' + (window.BUILD_VERSION || Date.now()), {cache: 'no-cache'}
 document.querySelector('#q').addEventListener('input', e => {
   state.q = e.target.value.trim().toLowerCase(); render();
 });
+
+// Tabs
+function showTab(tab) {
+  const dirOn = (tab === 'directory');
+  document.querySelector('#view-directory').classList.toggle('hidden', !dirOn);
+  document.querySelector('#view-method').classList.toggle('hidden', dirOn);
+  document.querySelector('#nav-dir').classList.toggle('active', dirOn);
+  document.querySelector('#nav-method').classList.toggle('active', !dirOn);
+  if (!dirOn) loadPrompts();
+  if (location.hash.startsWith('#method') !== !dirOn) {
+    history.replaceState(null, '', dirOn ? '#' : '#method');
+  }
+}
+document.querySelector('#nav-dir').addEventListener('click', () => showTab('directory'));
+document.querySelector('#nav-method').addEventListener('click', () => showTab('method'));
+if (location.hash.startsWith('#method')) showTab('method');
+
+// Sort selector
+state.sort = 'cited';
+document.querySelector('#sort').addEventListener('change', e => {
+  state.sort = e.target.value; render();
+});
+
+// Lazy-load prompts from the published Python scripts
+let _promptsLoaded = false;
+async function loadPrompts() {
+  if (_promptsLoaded) return; _promptsLoaded = true;
+  try {
+    const ex = await (await fetch('scripts/extract_csos.py')).text();
+    const bs = await (await fetch('scripts/build_site.py')).text();
+    document.querySelector('#prompt-extract').textContent =
+        sliceTriplyQuoted(ex, 'EXTRACTION_PROMPT') || '(could not locate EXTRACTION_PROMPT in extract_csos.py)';
+    const where = sliceTriplyQuoted(bs, 'WHERE_PROMPT');
+    const when  = sliceTriplyQuoted(bs, 'WHEN_PROMPT');
+    const norms = sliceTriplyQuoted(bs, 'NORMS_PROMPT');
+    document.querySelector('#prompt-norm').textContent =
+        ['── WHERE_PROMPT ──', where, '\n── WHEN_PROMPT ──', when, '\n── NORMS_PROMPT ──', norms]
+          .filter(Boolean).join('\n');
+  } catch (e) {
+    document.querySelector('#prompt-extract').textContent = 'Failed to load prompts: ' + e;
+  }
+}
+function sliceTriplyQuoted(src, name) {
+  // Match  NAME = (triple-quoted block) ... (closing triple-quote)
+  const Q3 = String.fromCharCode(34, 34, 34);
+  const re = new RegExp(name + '\\s*=\\s*' + Q3 + '\\\\?\\n([\\s\\S]*?)\\n' + Q3);
+  const m = src.match(re);
+  return m ? m[1] : '';
+}
 
 document.querySelectorAll('.toolbar input[data-show]').forEach(cb => {
   cb.checked = !!state.show[cb.dataset.show];
@@ -397,6 +577,25 @@ function render() {
       `${filtered.length.toLocaleString()} CSO${filtered.length===1?'':'s'}`;
   document.querySelector('#active').innerHTML =
       activeBits() ? ` · ${activeBits()} <span class="clear" onclick="clearAll()">clear all</span>` : '';
+
+  // Sort
+  const collator = new Intl.Collator(undefined, {sensitivity:'base', ignorePunctuation:true});
+  const cmp = {
+    cited:  (a,b) => (b.paper_count - a.paper_count) || collator.compare(a.name, b.name),
+    alpha:  (a,b) => collator.compare(a.name, b.name),
+    recent: (a,b) => (maxYear(b) - maxYear(a)) || collator.compare(a.name, b.name),
+    oldest: (a,b) => ((a.when_min ?? 9999) - (b.when_min ?? 9999)) || collator.compare(a.name, b.name),
+  }[state.sort] || ((a,b) => 0);
+  filtered.sort(cmp);
+
+  function maxYear(r) {
+    let m = 0;
+    for (const p of (r.papers || [])) {
+      const y = parseInt(p.year, 10);
+      if (!isNaN(y) && y > m) m = y;
+    }
+    return m;
+  }
 
   const box = document.querySelector('#rows');
   box.innerHTML = '';
