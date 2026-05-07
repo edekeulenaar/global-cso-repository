@@ -206,7 +206,7 @@
       <label><input type="checkbox" data-show="type"      checked> Type</label>
       <label><input type="checkbox" data-show="languages" checked> Language</label>
       <label><input type="checkbox" data-show="topics"    checked> Topic</label>
-      <label><input type="checkbox" data-show="norms"     checked> Norms</label>
+      <label><input type="checkbox" data-show="norms"     checked> Issue focus</label>
       <span style="flex:1"></span>
       <label>Sort:
         <select id="sort">
@@ -240,6 +240,62 @@ A bibliography of <strong>7,772</strong> records was built by scraping Google Sc
 The bibliography was discipline-classified using a separate enrichment pass and joined to the extraction by PDF path or title.</p>
 
 <p><strong>2. AI model cards</strong> (43 PDFs from major frontier AI labs — GPT, Claude, Gemini, DeepSeek, Llama, Grok). These were treated as a parallel discipline (<code>AI / model card</code>) and processed alongside the academic literature, on the premise that model alignment, refusal training, RLHF/RLAIF, evaluation, and red-teaming are continuous with the longer history of moderation and censorship.</p>
+
+<h3>NetGov directory of platform-governance organisations</h3>
+
+<p>Alongside the academic literature, the directory integrates a hand-curated <strong>NetGov directory</strong> of organisations engaged in platform governance (<a href="data/netgov_directory.csv" target="_blank">netgov_directory.csv</a>, 1,002 entries). For each NetGov organisation we map: <strong>Name</strong> → canonical name; <strong>Link</strong> → URL; <strong>category</strong> / <strong>specific_category</strong> → Type; <strong>headquarters_country</strong> → Country; <strong>issue_focus_relabelled</strong> (semicolon- or comma-delimited) → Issue focus; <strong>influence_evidence</strong> → Mechanism; <strong>establishment_year</strong> → When (lower bound, capped at 2025); <strong>NetGov Sources</strong> → the venue from which the entry was identified (used as the citation author). The synthetic citation under each NetGov-sourced CSO is labelled <em>NetGov Sources</em> rather than an academic article, with the link going to the organisation's own website.</p>
+
+<p>NetGov entries are merged with academic-literature CSOs by canonical name (case-insensitive, accent-folded, leading-article stripped), so an organisation appearing in both data sources gets a single card with both kinds of citations beneath.</p>
+
+<h4>Method (NetGov)</h4>
+
+<p>To address these research questions, we develop an iterative multi-source method that combines traditional purposive sampling with systematic web searches across multiple languages and countries. The data collection and processing approach is illustrated below.</p>
+
+<h4>Data collection</h4>
+
+<p>Our data collection integrates two complementary approaches designed to capture both established and emerging civil society actors across different contexts of engagement.</p>
+
+<p><strong>Organizations identified from existing platform governance data sources.</strong> We began with organisations from established platform governance venues (hereinafter Source A). These sources include public databases; policy consultation submissions for major legislative processes (e.g. the EU's Digital Services Act, the UK's Online Safety Act); official lists of platform partners (e.g. Meta's Safety Partners Programme) and EU trusted flaggers; coalition and network memberships from established transnational advocacy networks; and speaker and participant lists from key field events (e.g. TrustCon, Trust and Safety Summit).</p>
+
+<p>These venues represent the most visible points of civil society engagement with both platforms and policymakers. Yet each also carries biases. Policy-consultation processes favour organisations with sufficient resources and legal expertise to engage in formal regulatory processes and tend to attract those that prioritise such engagement. Conference participation skews toward organisations with travel funding and existing networks, and those that seek publicity and access. Platform partnerships may exclude organisations that maintain independence from direct platform engagement, or that take a more adversarial position. To preserve these differences as an analytical variable rather than a limitation, we recorded the sources from which each organisation was identified, allowing comparison of actors by pathway of entry into governance processes.</p>
+
+<p>Since we identified both organisational and individual actors (e.g. conference speakers, individual members of certain networks), we incorporated the organisational affiliations of individual actors into the list of organisations for the current study, so that our analysis focuses on more "organised forms" of social action.</p>
+
+<p><strong>Organizations identified from Google search results.</strong> To address coverage limitations of traditional sources, we conducted Google searches (Source B). We developed 30 search queries related to content moderation and platform governance. Each query is executed in English, Danish, and German across our four main target countries (US, UK, Germany, Denmark). These countries are sampled to cover spaces where most Western platforms are headquartered in European markets both inside and outside the EU, in addition to the team's domain and language expertise. We used the Google Search SerpAPI to collect the top 100 results per query, language, and country combination. This approach yielded <strong>16,304</strong> deduplicated search results. Each result contained an actor's name, domain URL, and page snippet — providing scope for identifying organisations engaged in platform governance debates.</p>
+
+<p>The advantage of our multi-source approach is that combining venue-based sampling with search queries from multiple languages helps us build a more inclusive picture than any one approach alone. In principle this could be expanded to more actors via additional languages for a more global mapping; for the limited purposes of this paper we focus on these four countries as preliminary starting points.</p>
+
+<h4>Corpus building</h4>
+
+<p>After deduplication based on domain names, the dataset was reduced to <strong>7,257</strong> organisational entries — 3,960 from Source A and 3,297 from Source B. Where Source A lacked links, we used the Google Search SerpAPI to obtain the three most relevant website results. We then downloaded each website in text format using a combination of Python libraries: <code>scrapy</code> for crawling, <code>trafilatura</code> and <code>beautifulsoup</code> for HTML parsing, and <code>readability-lxml</code> as a fallback. Text was downloaded in markdown format and stripped of images and other non-textual data, thus missing additional indicators of partners or funding.</p>
+
+<p>Pages clearly irrelevant to organisational identity (e.g. analytics, donation forms, cookies) or inaccessible (e.g. 404/403 errors) were excluded. We also filtered pages using a whitelist of indicative keywords — <em>mission</em>, <em>about us</em>, <em>vision</em>, <em>our work</em>, <em>projects</em>, <em>policy</em>, <em>research</em>, <em>training</em>, <em>outreach</em> — translated into the most common non-English languages in our original datasets (Danish, German, French where relevant). The resulting corpus merged all pages per organisation into a single markdown file. Each organisation corresponds to one text file containing all available descriptive material.</p>
+
+<h4>LLM-assisted classification and iteration</h4>
+
+<p>Given the scale of the corpus (7,257 organisations), manual coding alone would have been prohibitively resource-intensive. Following recent work demonstrating the potential of LLMs for measuring complex social-science concepts (Laurer et al., 2025; Stolwijk et al., 2025; Weber &amp; Reichardt, 2023; Ziems et al., 2024), we used <strong>GPT-5-mini</strong> to assist with classification, with a structured prompt derived from a codebook, and adopted an iterative approach focused on conceptual refinement.</p>
+
+<p><em>Initial operationalisation and prompt calibration.</em> We developed an initial coding schema grounded in our theoretical framework of civil society power in platform governance. Informed by previous work (Grover, 2022; Tjahja et al., 2021), the schema sought to assess observable structural attributes (e.g. organisational category, scope, country) based on website data, and substantive variables capturing thematic orientations (e.g. issue focus, functions, demands) and relational characteristics (e.g. platform relationships, funding, affiliations).</p>
+
+<p>To assess operational clarity, three researchers first independently coded 30 random samples and discussed conceptual ambiguities, overlapping categories, and difficulties in consistently applying theoretical distinctions to website information. Following collective discussion, we revised definitions, clarified category boundaries, and selected calibrated few-shot examples to embed in the LLM prompt. The prompt instructed the model to (1) assign predefined labels, (2) extract actors' own issue framings and functional descriptions, and (3) provide short evidence excerpts from the website texts to justify each classification. The model was run in batches, with a maximum of 25,000 characters per organisation.</p>
+
+<p>During this stage, we implemented a pre-classification filtering process. Entries were excluded if websites were inaccessible (n = 268), consisted solely of personal blogs or aggregated content platforms (n = 560), or represented public authorities (n = 617), private companies (n = 717), broad academic institutions or generic academic outputs (n = 1,756), or were coded as non-relevant (n = 352). We manually reviewed flagged cases to correct false negatives and then deduplicated organisations appearing across multiple sources (n = 844). At the conclusion of Round 1, the codebook remained provisional.</p>
+
+<p><em>Conceptual refinement and iteration.</em> The second round served two main purposes: conceptual validation and robustness testing. First, all three researchers conducted a close reading of the first-round LLM classifications for non-profit/non-state and academic-specific actors. Because several variables relied on extracting information from open-ended website texts, in many cases pre-assigned labels in the first round proved either too granular or insufficiently aligned with how organisations articulated their missions. Owing to the granularity of these labels, we applied keyword-matching to group actors' own descriptions into interpretable variables and manually verified the reclassification. We then revised the schema by incorporating new labels to better reflect patterns emerging from the data.</p>
+
+<p>Second, three researchers independently coded an additional 50 organisations to stress-test both the LLM classifications and the revised coding scheme. As in Round 1, we compared coding decisions and discussed disagreements within the research team, and between human coders and LLM, qualitatively to determine their source. In many cases divergences reflected conceptual indeterminacy or overlapping definitions across variables in the original codebook. These discussions led to further simplification of the schema, clearer definitional boundaries and examples, and removal of variables that proved persistently unstable or theoretically redundant. The model was again run in batches, with a maximum of 30,000 characters per organisation.</p>
+
+<p>The final codebook records the following per organisation: <strong>Relevance to platform governance</strong> (<em>high / low / irrelevant</em>); <strong>Establishment year</strong>; <strong>Organisational category</strong> (advocacy, coalition, network, industry/trade association, academic research centre/lab, think tank/policy institute, foundation/philanthropy, non-profit media/fact-checking, legal advocacy, tech infrastructure/standards organisation); <strong>Geographic scope</strong> (global / regional / national / sub-national); <strong>Headquarters country</strong>; <strong>Coverage focus</strong> (social_focus / tech_focus); <strong>Issue focus</strong> (human rights, free speech, censorship, privacy &amp; data protection, algorithmic justice, mis/disinformation, child safety, counter-extremism, media/journalism, digital inclusion, consumer protection, hate or dangerous speech, minority rights, environmental impact, prosocial content moderation, middleware, challenging Big Tech, compliance with local speech regulations, others); <strong>Primary functions</strong> (knowledge production &amp; analysis; advocacy, campaigning &amp; agenda setting; capacity building &amp; resource provision; policy &amp; norm development; community building; legal &amp; accountability actions; technical intervention &amp; infrastructure); and <strong>Main funding category</strong> (government &amp; intergovernmental; philanthropic foundations &amp; private wealth; corporate &amp; industry; membership-based / earned revenue; individual / public donation &amp; crowdfunding; other; unknown).</p>
+
+<p>After applying the revised schema and repeating classification and deduplication procedures, the final analytic dataset contains <strong>2,143</strong> unique organisations classified as CSO actors engaged in platform governance. Each record includes structural observable variables (establishment year, geographic scope, country) and substantive variables (coverage focus, issue focus, functions, funding types, specific funders). Where information was incomplete or ambiguous, variables were coded as "unknown".</p>
+
+<h4>Methodological limitations (NetGov)</h4>
+
+<p>There are at least three limitations accompanying our approach. First, the compilation of established platform-governance sources relied on the expertise and judgment of the research team. Although we consulted a diverse range of venues, this list is not exhaustive and inevitably reflects positional and language biases. While we sought to complement these sources with systematic Google search results, we recognise that Google's ranking algorithms shape which organisations are most visible, and that this visibility fluctuates over time. We also overlooked social media networks and professional sites such as LinkedIn as sources for data collection — both useful for finding international actors without a strong presence in either public-consultation fora or the Web sphere; indeed, our dataset revealed that a few actors had an exclusive presence on Facebook.</p>
+
+<p>Second, our multilingual searches were limited to English, Danish, and German, while the approach can in principle be extended to other languages. Although the final dataset includes actors from more than 130 countries/regions, organisations operating primarily in other linguistic contexts are underrepresented. Further, our analysis focused on organisations rather than individuals, and aggregated personal affiliations into institutional entities; this may obscure the internal diversity of roles and positions within each organisation. Moreover, our reliance on publicly available website texts means classifications are based on organisations' self-descriptions, which are strategic representations and may emphasise some activities while omitting others, including informal or non-public forms of engagement. Finally, while LLM-based classification enables large-scale coverage, the model may infer attributes not explicitly stated or miss contextual nuance (Laurer et al., 2025; Stoll et al., 2025; Stolwijk et al., 2025).</p>
+
+<p>To mitigate this risk, each record includes short evidence excerpts that facilitate manual verification. We do not claim that the dataset constitutes a representative sample of all civil society organisations engaged in platform governance. Rather, it captures a large and diverse subset of publicly visible actors across multiple venues and languages. The findings should be interpreted as identifying structural patterns, issue alignments, and means of engagement within this mapped ecosystem, rather than as distributional estimates of the broader field of platform governance.</p>
 
 <h3>Bibliography construction, PDF retrieval, and relevance screening</h3>
 
@@ -338,6 +394,7 @@ The bibliography was discipline-classified using a separate enrichment pass and 
   <div>📄 <a href="scripts/extract_csos.py" target="_blank">extract_csos.py</a> — Gemini-based CSO extraction from PDFs (resume-safe, parallel)</div>
   <div>📄 <a href="scripts/build_site.py" target="_blank">build_site.py</a> — normalisation, merging, bibliography join, static-site emission</div>
   <div>📊 <a href="data/master_bibliography_disciplines_enriched.csv" target="_blank">master_bibliography_disciplines_enriched.csv</a> — full bibliography (7,772 records with discipline, query, relevance verdict)</div>
+  <div>📊 <a href="data/netgov_directory.csv" target="_blank">netgov_directory.csv</a> — NetGov directory of platform-governance organisations (1,002 entries)</div>
   <div>📊 <a href="data/cso_extraction_results.csv" target="_blank">cso_extraction_results.csv</a> — raw extraction (long format, one row per (paper, CSO))</div>
   <div>🔗 <a href="data.json" target="_blank">data.json</a> — the built directory (one record per merged CSO)</div>
   <div>💾 <a href="https://github.com/edekeulenaar/global-cso-repository" target="_blank">Repository</a> — full source of this site</div>
@@ -349,14 +406,14 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 </section>
 
-<script>window.BUILD_VERSION = '1778148388';
+<script>window.BUILD_VERSION = '1778148989';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
   { key: 'languages', label: 'Article language' },
   { key: 'topics',    label: 'Topic' },
   { key: 'type',      label: 'Type', single: true },
-  { key: 'norms',     label: 'Norms / values / interests' },
+  { key: 'norms',     label: 'Issue focus' },
 ];
 
 const TL_MIN = 1400, TL_MAX = 2025;
@@ -483,7 +540,7 @@ document.querySelector('#share').addEventListener('click', async () => {
 
 const CSV_FIELDS = [
   'Canonical name','Aliases','Type','All types','Countries','Platform/Media',
-  'Languages','Topics (CSO)','Norms/values/interests','When periods','When min','When max',
+  'Languages','Topics (CSO)','Issue focus','When periods','When min','When max',
   'Paper count',
   'Paper title','Paper author','Paper year','Paper language','Paper URL','Page','Mechanism',
   'Verbatim quote','Paper topic','Paper Where (raw)','Paper When (raw)',
