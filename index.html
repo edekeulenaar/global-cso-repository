@@ -102,6 +102,15 @@
   .card { background: var(--card); border: 1px solid var(--line);
           border-radius: 8px; padding: 14px 16px; margin-bottom: 12px;
           box-shadow: 0 1px 0 rgba(0,0,0,.02); }
+  .card { position: relative; }
+  .card .dismiss { position:absolute; top:8px; right:10px;
+                   font: 600 16px ui-sans-serif, system-ui;
+                   color: var(--muted); cursor: pointer;
+                   width: 22px; height: 22px; line-height: 20px;
+                   text-align: center; border-radius: 50%;
+                   user-select: none; }
+  .card .dismiss:hover { background: var(--accent); color: white; }
+  .card .dismiss::before { content: '✕'; }
   .card .name { font-weight: 600; font-size: 17px; }
   .card .type { color: var(--muted); font-size: 11px; margin-left: 8px;
                 text-transform: uppercase; letter-spacing: .05em;
@@ -214,13 +223,15 @@
     <div class="meta"><span id="count"></span><span id="active"></span></div>
     <div class="toolbar">
       <span>Show on cards:</span>
-      <label><input type="checkbox" data-show="when"      checked> When</label>
-      <label><input type="checkbox" data-show="countries" checked> Country</label>
-      <label><input type="checkbox" data-show="media"     checked> Platform/media</label>
-      <label><input type="checkbox" data-show="type"      checked> Type</label>
-      <label><input type="checkbox" data-show="languages" checked> Language</label>
-      <label><input type="checkbox" data-show="topics"    checked> Topic</label>
-      <label><input type="checkbox" data-show="norms"     checked> Issue focus</label>
+      <label><input type="checkbox" data-show="when"     > When</label>
+      <label><input type="checkbox" data-show="countries"> Country</label>
+      <label><input type="checkbox" data-show="media"    > Platform/media</label>
+      <label><input type="checkbox" data-show="type"     > Type</label>
+      <label><input type="checkbox" data-show="subtypes" > Subtype</label>
+      <label><input type="checkbox" data-show="languages"> Language</label>
+      <label><input type="checkbox" data-show="topics"   > Topic</label>
+      <label><input type="checkbox" data-show="norms"    > Issue focus</label>
+      <span id="hidden-restore"></span>
       <span style="flex:1"></span>
       <label>Sort:
         <select id="sort">
@@ -420,18 +431,19 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 </section>
 
-<script>window.BUILD_VERSION = '1778149777';
+<script>window.BUILD_VERSION = '1778150397';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
   { key: 'languages', label: 'Article language' },
   { key: 'topics',    label: 'Topic' },
   { key: 'type',      label: 'Type', single: true },
+  { key: 'subtypes',  label: 'Subtype' },
   { key: 'norms',     label: 'Issue focus' },
 ];
 
 const TL_MIN = 1400, TL_MAX = 2025;
-const FACET_KEYS = ['countries','media','languages','topics','type','norms'];
+const FACET_KEYS = ['countries','media','languages','topics','type','subtypes','norms'];
 
 function makeEmptySelected() {
   const o = {};
@@ -446,17 +458,35 @@ const state = {
   tlFrom: TL_MIN, tlTo: TL_MAX,
   tlIncludeUnknown: true,
   show: loadShow(),
+  hidden: loadHidden(),
 };
 
+function loadHidden() {
+  try { return new Set(JSON.parse(localStorage.getItem('cso_hidden') || '[]')); }
+  catch (e) { return new Set(); }
+}
+function saveHidden() {
+  try { localStorage.setItem('cso_hidden', JSON.stringify([...state.hidden])); }
+  catch (e) {}
+}
+function dismissCard(name) {
+  state.hidden.add(name); saveHidden(); render();
+}
+function restoreHidden() {
+  state.hidden.clear(); saveHidden(); render();
+}
+
 function loadShow() {
-  const def = { when:true, countries:true, media:true, type:true, topics:true, norms:true, languages:true };
+  // Default: nothing toggled on — clean cards. User can opt-in.
+  const def = { when:false, countries:false, media:false, type:false,
+                subtypes:false, topics:false, norms:false, languages:false };
   try {
-    const s = JSON.parse(localStorage.getItem('cso_show') || '{}');
+    const s = JSON.parse(localStorage.getItem('cso_show_v2') || '{}');
     return { ...def, ...s };
   } catch (e) { return def; }
 }
 function saveShow() {
-  try { localStorage.setItem('cso_show', JSON.stringify(state.show)); } catch (e) {}
+  try { localStorage.setItem('cso_show_v2', JSON.stringify(state.show)); } catch (e) {}
 }
 
 fetch('data.json?v=' + (window.BUILD_VERSION || Date.now()), {cache: 'no-cache'}).then(r => r.json()).then(rows => {
@@ -560,7 +590,7 @@ document.querySelector('#share').addEventListener('click', async () => {
 });
 
 const CSV_FIELDS = [
-  'Canonical name','Aliases','Type','All types','Countries','Platform/Media',
+  'Canonical name','Aliases','Type','All types','Subtypes','Countries','Platform/Media',
   'Languages','Topics (CSO)','Issue focus','When periods','When min','When max',
   'Paper count',
   'Paper title','Paper author','Paper year','Paper language','Paper URL','Page','Mechanism',
@@ -583,6 +613,7 @@ function downloadCSV() {
       (r.aliases || []).join('; '),
       r.type || '',
       (r.types_all || []).join('; '),
+      (r.subtypes || []).join('; '),
       (r.countries || []).join('; '),
       (r.media || []).join('; '),
       (r.languages || []).join('; '),
@@ -717,6 +748,7 @@ function refreshChips() {
 }
 
 function matches(r) {
+  if (state.hidden.has(r.name)) return false;
   for (const f of FACETS) {
     const sel = state.selected[f.key];
     const vals = f.single ? [r[f.key]] : (r[f.key] || []);
@@ -753,6 +785,14 @@ function render() {
       `${filtered.length.toLocaleString()} CSO${filtered.length===1?'':'s'}`;
   document.querySelector('#active').innerHTML =
       activeBits() ? ` · ${activeBits()} <span class="clear" onclick="clearAll()">clear all</span>` : '';
+
+  // Hidden-card restore notice
+  const hr = document.querySelector('#hidden-restore');
+  if (hr) {
+    hr.innerHTML = state.hidden.size
+      ? ` · <span class="clear" onclick="restoreHidden()">restore ${state.hidden.size} hidden card${state.hidden.size===1?'':'s'}</span>`
+      : '';
+  }
 
   // Sort
   const collator = new Intl.Collator(undefined, {sensitivity:'base', ignorePunctuation:true});
@@ -794,12 +834,14 @@ function render() {
 function renderCard(r) {
   const div = document.createElement('div');
   div.className = 'card';
+  div.dataset.name = r.name;
   const tags = [];
   if (state.show.countries) for (const v of r.countries) tags.push(tag('countries', v, 'country'));
   if (state.show.media)     for (const v of r.media)     tags.push(tag('media',     v, 'media'));
   if (state.show.languages) for (const v of (r.languages || [])) tags.push(tag('languages', v, 'language'));
   if (state.show.topics)    for (const v of r.topics)    tags.push(tag('topics',    v, 'topic'));
   if (state.show.type && r.type) tags.push(tag('type', r.type, 'type'));
+  if (state.show.subtypes)  for (const v of (r.subtypes || [])) tags.push(tag('subtypes', v, 'type'));
   if (state.show.norms)     for (const v of r.norms) tags.push(tag('norms', v, 'norms'));
 
   const periodLabel = r.when_min != null && r.when_max != null
@@ -810,6 +852,7 @@ function renderCard(r) {
   if (state.show.when && periodLabel) tags.unshift(`<span class="tag k-when">${escapeHtml(periodLabel)}</span>`);
 
   div.innerHTML = `
+    <span class="dismiss" title="Hide this card (click toolbar to restore)"></span>
     <div><span class="name">${escapeHtml(r.name)}</span>
          ${r.type ? `<span class="type">${escapeHtml(r.type)}</span>` : ''}</div>
     <div class="summary">Cited by <strong>${r.paper_count}</strong> paper${r.paper_count===1?'':'s'}${
@@ -822,6 +865,7 @@ function renderCard(r) {
   div.querySelectorAll('.tag').forEach(el => {
     if (el.dataset.key) el.onclick = () => toggle(el.dataset.key, el.dataset.val);
   });
+  div.querySelector('.dismiss').onclick = (e) => { e.stopPropagation(); dismissCard(r.name); };
   return div;
 }
 
