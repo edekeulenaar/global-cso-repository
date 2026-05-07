@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <title>Civil society in censorship, moderation & AI alignment</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Hash-routed faceted filters require fresh HTML on every load.
+     Without these, browsers can serve a stale index.html that crashes on
+     newer data.json shapes, silently swallowing the error and showing the
+     bare directory. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <style>
   :root {
     --bg:#fafaf7; --ink:#1c1c1c; --muted:#6a6a6a; --accent:#9b1c1c;
@@ -413,7 +420,7 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 </section>
 
-<script>window.BUILD_VERSION = '1778149361';
+<script>window.BUILD_VERSION = '1778149777';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
@@ -881,23 +888,39 @@ function syncHash() {
 
 function hydrateFromHash() {
   if (location.hash.length < 2) return;
-  try {
-    const s = JSON.parse(decodeURIComponent(location.hash.slice(1)));
-    for (const k of Object.keys(s)) {
-      if (k === 'q') { state.q = s[k]; document.querySelector('#q').value = s[k]; }
-      else if (k === 'from') { state.tlFrom = s[k]; document.querySelector('#tl-r1').value = s[k]; }
-      else if (k === 'to')   { state.tlTo   = s[k]; document.querySelector('#tl-r2').value = s[k]; }
+  let s;
+  try { s = JSON.parse(decodeURIComponent(location.hash.slice(1))); }
+  catch (e) { console.warn('hash decode failed:', e); return; }
+
+  // Self-heal: ensure each state.selected[k] has {include, exclude} Sets,
+  // even if some older code path left a plain Set there.
+  for (const k of FACET_KEYS) {
+    const cur = state.selected[k];
+    if (!cur || !cur.include || !cur.exclude) {
+      state.selected[k] = { include: new Set(), exclude: new Set() };
+    }
+  }
+
+  let applied = 0;
+  for (const k of Object.keys(s)) {
+    try {
+      if (k === 'q') { state.q = s[k]; document.querySelector('#q').value = s[k]; applied++; }
+      else if (k === 'from') { state.tlFrom = s[k]; document.querySelector('#tl-r1').value = s[k]; applied++; }
+      else if (k === 'to')   { state.tlTo   = s[k]; document.querySelector('#tl-r2').value = s[k]; applied++; }
       else if (k === 'no_unk') { state.tlIncludeUnknown = false;
-                                 document.querySelector('#tl-unknown').checked = false; }
+                                 document.querySelector('#tl-unknown').checked = false; applied++; }
       else if (k.endsWith('!')) {
         const base = k.slice(0, -1);
-        if (state.selected[base]) state.selected[base].exclude = new Set(s[k]);
+        if (state.selected[base]) { state.selected[base].exclude = new Set(s[k]); applied++; }
       }
-      else if (state.selected[k]) state.selected[k].include = new Set(s[k]);
+      else if (state.selected[k]) { state.selected[k].include = new Set(s[k]); applied++; }
+    } catch (e) {
+      console.warn('hash key failed:', k, e);
     }
-    document.querySelector('#tl-r1').dispatchEvent(new Event('input'));
-    refreshChips();
-  } catch (e) {}
+  }
+  console.info('hash hydrated', applied, 'filters from URL');
+  document.querySelector('#tl-r1').dispatchEvent(new Event('input'));
+  refreshChips();
 }
 
 function escapeHtml(s) {
