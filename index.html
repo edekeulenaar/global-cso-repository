@@ -431,7 +431,7 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 </section>
 
-<script>window.BUILD_VERSION = '1778153058';
+<script>window.BUILD_VERSION = '1778154474';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
@@ -987,7 +987,27 @@ function hydrateFromHash() {
       console.warn('hash key failed:', k, e);
     }
   }
-  console.info('hash hydrated', applied, 'filters from URL');
+  // Backward-compat: Type used to be a free-text field (e.g. "religious
+  // association", "social movement") before being canonicalised to 3
+  // buckets. URLs generated under the old schema still use those values
+  // under `type`/`type!`. Migrate them to `subtypes`/`subtypes!` so old
+  // shareable links still work.
+  const TYPE_BUCKETS = new Set(['non-profit/non-state','academic_specific','other']);
+  let migrated = 0;
+  if (state.selected.type && state.selected.subtypes) {
+    for (const slot of ['include','exclude']) {
+      const vals = [...state.selected.type[slot]];
+      const stay = vals.filter(v => TYPE_BUCKETS.has(v));
+      const move = vals.filter(v => !TYPE_BUCKETS.has(v));
+      if (move.length) {
+        state.selected.type[slot] = new Set(stay);
+        for (const v of move) state.selected.subtypes[slot].add(v);
+        migrated += move.length;
+      }
+    }
+  }
+  console.info('hash hydrated', applied, 'filters from URL'
+               + (migrated ? ` (${migrated} migrated type→subtype)` : ''));
   document.querySelector('#tl-r1').dispatchEvent(new Event('input'));
   refreshChips();
 }
