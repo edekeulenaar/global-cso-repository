@@ -181,7 +181,10 @@
 <header>
   <div class="titles">
     <h1>Civil society organisations in censorship, moderation & AI alignment</h1>
-    <p>Faceted directory across <span id="paper-stat">academic literature</span>.</p>
+    <p>Civil society organisations mentioned in academic papers and reports on
+       censorship, moderation and AI alignment. <em>First iteration before
+       further validation.</em> Faceted directory across
+       <span id="paper-stat">academic literature</span>.</p>
   </div>
   <nav>
     <a id="nav-dir" class="active">Directory</a>
@@ -213,6 +216,7 @@
           <option value="oldest">Earliest period</option>
         </select>
       </label>
+      <button id="share" type="button">📋 Copy share link</button>
       <button id="dl-csv" type="button">⬇ Download CSV</button>
     </div>
     <div id="rows"></div>
@@ -221,6 +225,9 @@
 
 <section id="view-method" class="hidden method">
 <h2>Method</h2>
+
+<p><strong>About this project.</strong> This is a repository of civil society organisations mentioned in academic papers and reports on censorship, moderation and AI alignment, part of the <a href="https://comm.ku.dk/research/PowerOverPlatforms/" target="_blank">Power over Platforms</a> project at the University of Copenhagen.</p>
+<p>It is currently under refinement and validation.</p>
 
 <h3>Corpus</h3>
 <p>The corpus combines two sources.</p>
@@ -342,7 +349,7 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 </section>
 
-<script>window.BUILD_VERSION = '1778079421';
+<script>window.BUILD_VERSION = '1778148388';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
@@ -460,6 +467,19 @@ document.querySelectorAll('.toolbar input[data-show]').forEach(cb => {
 });
 
 document.querySelector('#dl-csv').addEventListener('click', downloadCSV);
+document.querySelector('#share').addEventListener('click', async () => {
+  const btn = document.querySelector('#share');
+  const url = location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+    const old = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  } catch (e) {
+    // Fallback: show prompt for manual copy
+    window.prompt('Copy this link:', url);
+  }
+});
 
 const CSV_FIELDS = [
   'Canonical name','Aliases','Type','All types','Countries','Platform/Media',
