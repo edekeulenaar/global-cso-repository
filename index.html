@@ -431,7 +431,7 @@ The bibliography was discipline-classified using a separate enrichment pass and 
 
 </section>
 
-<script>window.BUILD_VERSION = '1778152727';
+<script>window.BUILD_VERSION = '1778153058';
 const FACETS = [
   { key: 'countries', label: 'Country / polity' },
   { key: 'media',     label: 'Platform / media' },
@@ -459,7 +459,11 @@ const state = {
   tlIncludeUnknown: true,
   show: loadShow(),
   hidden: loadHidden(),
+  // Case-insensitive merge: per-facet, lowercase key → most-common original label
+  labelMap: {},
 };
+
+const lc = v => v == null ? '' : String(v).trim().toLowerCase();
 
 function loadHidden() {
   try { return new Set(JSON.parse(localStorage.getItem('cso_hidden') || '[]')); }
@@ -685,18 +689,32 @@ function buildFilters() {
   });
   syncFill();
 
-  // Categorical facets
+  // Categorical facets — case-insensitive merge: group by lowercase key,
+  // pick the most-common original casing as the chip's display label.
   for (const f of FACETS) {
-    const counts = new Map();
+    const grouped = new Map();   // lc → {count, variants: Map<original, count>}
     for (const r of state.rows) {
       const vals = f.single ? [r[f.key]] : (r[f.key] || []);
       for (const v of vals) {
         if (!v) continue;
-        counts.set(v, (counts.get(v) || 0) + 1);
+        const k = lc(v);
+        if (!k) continue;
+        let entry = grouped.get(k);
+        if (!entry) { entry = { count: 0, variants: new Map() }; grouped.set(k, entry); }
+        entry.count++;
+        entry.variants.set(v, (entry.variants.get(v) || 0) + 1);
       }
     }
-    const sorted = [...counts.entries()].sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]));
-    if (!sorted.length) continue;
+    if (!grouped.size) continue;
+    state.labelMap[f.key] = state.labelMap[f.key] || {};
+    const sorted = [...grouped.entries()]
+      .map(([k, info]) => {
+        const variants = [...info.variants.entries()].sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]));
+        const label = variants[0][0];
+        state.labelMap[f.key][k] = label;
+        return [k, label, info.count];
+      })
+      .sort((a,b) => b[2]-a[2] || a[1].localeCompare(b[1]));
     const sec = document.createElement('div');
     sec.className = 'facet';
     sec.innerHTML = `<h2>${f.label} <span style="color:var(--muted);font-weight:normal">(${sorted.length})</span></h2>
@@ -704,12 +722,12 @@ function buildFilters() {
                      <div class="chips" data-key="${f.key}"></div>`;
     root.appendChild(sec);
     const chipBox = sec.querySelector('.chips');
-    for (const [val, n] of sorted) {
+    for (const [k, label, n] of sorted) {
       const c = document.createElement('span');
       c.className = 'chip';
-      c.dataset.key = f.key; c.dataset.val = val;
-      c.innerHTML = `${escapeHtml(val)}<span class="n">${n}</span>`;
-      c.onclick = () => toggle(f.key, val);
+      c.dataset.key = f.key; c.dataset.val = k;  // lowercase as canonical key
+      c.innerHTML = `${escapeHtml(label)}<span class="n">${n}</span>`;
+      c.onclick = () => toggle(f.key, k);
       chipBox.appendChild(c);
     }
     sec.querySelector('input[type=text]').addEventListener('input', e => {
@@ -751,7 +769,7 @@ function matches(r) {
   if (state.hidden.has(r.name)) return false;
   for (const f of FACETS) {
     const sel = state.selected[f.key];
-    const vals = f.single ? [r[f.key]] : (r[f.key] || []);
+    const vals = (f.single ? [r[f.key]] : (r[f.key] || [])).map(lc);
     // Exclude: any vals match exclude → fail
     if (sel.exclude.size) {
       for (const v of vals) if (v && sel.exclude.has(v)) return false;
@@ -762,7 +780,6 @@ function matches(r) {
       for (const v of vals) if (v && sel.include.has(v)) { ok = true; break; }
       if (!ok) return false;
     }
-    continue;
   }
   // Timeline filter
   const hasPeriod = (r.when_min != null && r.when_max != null);
@@ -884,17 +901,19 @@ function renderPaper(p) {
 }
 
 function tag(key, val, klass) {
-  return `<span class="tag k-${klass}" data-key="${key}" data-val="${escapeAttr(val)}">${escapeHtml(val)}</span>`;
+  // Display original-cased value, but click toggles the case-insensitive key
+  return `<span class="tag k-${klass}" data-key="${key}" data-val="${escapeAttr(lc(val))}">${escapeHtml(val)}</span>`;
 }
 
 function activeBits() {
   const parts = [];
+  const lookup = (k, v) => (state.labelMap[k] && state.labelMap[k][v]) || v;
   for (const f of FACETS) {
     const sel = state.selected[f.key];
     if (sel.include.size)
-      parts.push(`${f.label}: ${[...sel.include].map(escapeHtml).join(', ')}`);
+      parts.push(`${f.label}: ${[...sel.include].map(v => escapeHtml(lookup(f.key, v))).join(', ')}`);
     if (sel.exclude.size)
-      parts.push(`${f.label} ≠ ${[...sel.exclude].map(escapeHtml).join(', ')}`);
+      parts.push(`${f.label} ≠ ${[...sel.exclude].map(v => escapeHtml(lookup(f.key, v))).join(', ')}`);
   }
   if (state.tlFrom !== TL_MIN || state.tlTo !== TL_MAX)
     parts.push(`When: ${state.tlFrom}–${state.tlTo}`);
@@ -955,9 +974,15 @@ function hydrateFromHash() {
                                  document.querySelector('#tl-unknown').checked = false; applied++; }
       else if (k.endsWith('!')) {
         const base = k.slice(0, -1);
-        if (state.selected[base]) { state.selected[base].exclude = new Set(s[k]); applied++; }
+        if (state.selected[base]) {
+          state.selected[base].exclude = new Set((s[k] || []).map(lc));
+          applied++;
+        }
       }
-      else if (state.selected[k]) { state.selected[k].include = new Set(s[k]); applied++; }
+      else if (state.selected[k]) {
+        state.selected[k].include = new Set((s[k] || []).map(lc));
+        applied++;
+      }
     } catch (e) {
       console.warn('hash key failed:', k, e);
     }
